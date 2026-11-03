@@ -1,0 +1,3891 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>JustBuildAHouse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one-screen app. Slim toolbar on top, 3D viewport filling the rest, a 340px details panel on the right that becomes a bottom sheet on phones. */
+:root {
+  --bg: #e9edf1;
+  --surface: #ffffff;
+  --surface-2: #dde3ea;
+  --fg: #1b242e;
+  --muted: #5d6b79;
+  --line: #c9d2db;
+  --accent: #1d6d89;
+  --accent-fg: #ffffff;
+  --wall: #26303b;
+  --glass: #5f9fc4;
+  --warn: #a8500b;
+  --error: #b3261e;
+  --sky: #d6e6f2;
+  --font-display: "Barlow Semi Condensed", "Arial Narrow", "Segoe UI", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10161c; --surface: #1a2229; --surface-2: #243039; --fg: #e4ebf1; --muted: #98a7b5; --line: #2f3c48;
+    --accent: #5cb4d1; --accent-fg: #07151b; --wall: #dde5ec; --glass: #6fb3d6; --warn: #f0a35e; --error: #ff8a80;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10161c; --surface: #1a2229; --surface-2: #243039; --fg: #e4ebf1; --muted: #98a7b5; --line: #2f3c48;
+  --accent: #5cb4d1; --accent-fg: #07151b; --wall: #dde5ec; --glass: #6fb3d6; --warn: #f0a35e; --error: #ff8a80;
+  color-scheme: dark;
+}
+
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.45; overflow: hidden; }
+button { font: inherit; color: inherit; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { height: 100%; display: flex; flex-direction: column; }
+
+.bar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px;
+  padding-block: 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--surface); border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; flex-direction: column; min-width: 0; }
+.eyebrow { font-family: var(--font-display); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.bar h1 { margin: 0; font-family: var(--font-display); font-size: 20px; font-weight: 600; line-height: 1.1; text-wrap: balance; }
+.stats { display: flex; gap: 14px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats b { color: var(--fg); font-weight: 500; }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface-2); }
+.seg button, .toggle, .btn {
+  appearance: none; border: 0; background: transparent; padding: 6px 12px; cursor: pointer;
+  font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: .02em; color: var(--muted);
+}
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: var(--accent); color: var(--accent-fg); }
+.toggle { border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); }
+.toggle.on { background: var(--surface); color: var(--fg); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+
+.stage { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 0; position: relative; }
+.app.panel-open .stage { grid-template-columns: 1fr 340px; }
+.viewport { position: relative; min-width: 0; min-height: 0; background: var(--sky); }
+#gl { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+.nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--fg); background: var(--bg); }
+
+.plan { position: absolute; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 12px; box-sizing: border-box; }
+.plan-svg { width: 100%; height: 100%; max-width: 100%; }
+.plan-svg .room { stroke: none; fill-opacity: .42; }
+.plan-svg .wall { fill: var(--wall); }
+.plan-svg .win { fill: var(--surface); stroke: var(--wall); stroke-width: .03; }
+.plan-svg .glass { stroke: var(--glass); stroke-width: .07; }
+.plan-svg .leaf { stroke: var(--fg); stroke-width: .05; stroke-linecap: round; }
+.plan-svg .swing { fill: none; stroke: var(--muted); stroke-width: .025; stroke-dasharray: .12 .08; }
+.plan-svg .open { stroke: var(--muted); stroke-width: .03; stroke-dasharray: .18 .1; }
+.plan-svg .rname { fill: var(--fg); font-family: var(--font-display); font-weight: 600; font-size: .44px; }
+.plan-svg .rarea { fill: var(--muted); font-family: var(--font-mono); font-size: .3px; }
+.plan-svg .dim line { stroke: var(--muted); stroke-width: .025; }
+.plan-svg .dim text { fill: var(--muted); font-family: var(--font-mono); font-size: .3px; }
+.plan-svg .north circle { fill: none; stroke: var(--muted); stroke-width: .03; }
+.plan-svg .north path { fill: var(--fg); }
+.plan-svg .north text { fill: var(--muted); font-family: var(--font-display); font-weight: 600; font-size: .34px; }
+.plan-svg .deck { fill: url(#deckfill); stroke: var(--muted); stroke-width: .03; }
+.plan-svg .deck-line { stroke: var(--muted); stroke-width: .02; stroke-opacity: .55; }
+.plan-svg .dname { fill: var(--muted); font-family: var(--font-display); font-weight: 600; font-size: .4px; }
+.plan-svg .step { fill: none; stroke: var(--fg); stroke-width: .02; stroke-opacity: .7; }
+.plan-svg .stair-arrow { fill: none; stroke: var(--fg); stroke-width: .035; }
+.plan-svg .step.down { stroke-opacity: .3; }
+.plan-svg .void { fill: none; stroke: var(--muted); stroke-width: .03; stroke-dasharray: .22 .1; }
+.plan-svg .rail { stroke: var(--fg); stroke-width: .08; stroke-linecap: square; }
+.plan-svg .furn .body { fill: var(--surface); fill-opacity: .85; stroke: var(--fg); stroke-width: .03; }
+.plan-svg .furn .glyph { fill: none; stroke: var(--muted); stroke-width: .025; }
+.plan-svg .furn text { fill: var(--muted); font-family: var(--font-mono); font-size: .2px; }
+.plan-svg .ptitle { fill: var(--muted); font-family: var(--font-display); font-weight: 600; font-size: .5px; letter-spacing: .04em; text-transform: uppercase; }
+
+.hint, .status {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  background: color-mix(in srgb, var(--surface) 90%, transparent); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px;
+  font-size: 12px; font-family: var(--font-mono); white-space: nowrap;
+  max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+}
+.hint { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+.status { top: 12px; }
+.dpad {
+  position: absolute; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  display: grid; grid-template-columns: repeat(3, 46px); grid-template-rows: repeat(2, 46px); gap: 6px;
+}
+.dpad button { border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--fg); border-radius: 8px; font-size: 16px; touch-action: none; user-select: none; cursor: pointer; }
+.dpad [data-key="KeyW"] { grid-column: 2; grid-row: 1; }
+.dpad [data-key="KeyA"] { grid-column: 1; grid-row: 2; }
+.dpad [data-key="KeyS"] { grid-column: 2; grid-row: 2; }
+.dpad [data-key="KeyD"] { grid-column: 3; grid-row: 2; }
+
+/* Guided tour: a transport bar at the bottom of the 3D view while a tour is loaded. */
+.tourbar {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; gap: 10px; width: min(440px, calc(100% - 32px)); box-sizing: border-box;
+  padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent); color: var(--fg); box-shadow: 0 4px 16px rgb(0 0 0 / .12);
+}
+.tb-btn { flex: none; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); color: var(--fg); cursor: pointer; }
+.tb-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.tb-btn svg { width: 16px; height: 16px; fill: currentColor; }
+.tb-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.tb-where { font-family: var(--font-display); font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-where small { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--muted); margin-left: 6px; }
+.tb-track { height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
+.tb-fill { height: 100%; width: 0; background: var(--accent); }
+.app.touring #walk-help, .app.touring #dpad { display: none !important; }
+.plan-svg .tour-route { fill: none; stroke: var(--accent); stroke-width: .06; stroke-dasharray: .25 .14; stroke-linecap: round; stroke-linejoin: round; }
+.plan-svg .tour-stop circle { fill: var(--accent); }
+.plan-svg .tour-stop text { fill: var(--accent-fg); font-family: var(--font-mono); font-size: .26px; font-weight: 500; }
+.plan-svg .tour-me { fill: var(--surface); stroke: var(--accent); stroke-width: .07; }
+
+.panel { background: var(--surface); border-left: 1px solid var(--line); overflow: auto; min-width: 0; display: flex; flex-direction: column; }
+.app:not(.panel-open) .panel { display: none; }
+.tabs {
+  display: flex; gap: 4px; position: sticky; top: 0; z-index: 1; background: var(--surface); border-bottom: 1px solid var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.tabs button { background: none; border: 0; padding: 10px 10px 8px; cursor: pointer; font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs button.on { color: var(--fg); border-bottom-color: var(--accent); }
+.tab { padding-block: 14px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 12px; }
+.desc { margin: 0; color: var(--muted); font-size: 13px; max-width: 60ch; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+th { font-family: var(--font-display); font-weight: 600; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+td.num, th.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+tfoot td { font-weight: 600; border-bottom: 0; }
+textarea { width: 100%; min-height: 320px; box-sizing: border-box; resize: vertical; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); tab-size: 2; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); color: var(--fg); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.msg { margin: 0; font-size: 12px; color: var(--muted); white-space: pre-wrap; font-family: var(--font-mono); }
+.msg.err { color: var(--error); }
+.msg.warn { color: var(--warn); }
+.help { max-width: 60ch; font-size: 13px; }
+.help h3 { margin: 10px 0 4px; font-family: var(--font-display); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.help p { margin: 0 0 8px; }
+.help ul { margin: 0 0 8px; padding-left: 18px; }
+.help li { margin: 2px 0; }
+.help code { font-family: var(--font-mono); font-size: 12px; background: var(--surface-2); padding: 1px 4px; border-radius: 3px; }
+kbd { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface-2); }
+tr.fl td { background: var(--surface-2); font-family: var(--font-display); font-weight: 600; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-top: 8px; }
+tr.fl td.num { font-family: var(--font-display); }
+.toggle[aria-disabled="true"] { opacity: .45; cursor: default; }
+
+@media (max-width: 820px) {
+  .app.panel-open .stage { grid-template-columns: 1fr; }
+  .panel { position: absolute; left: 0; right: 0; bottom: 0; max-height: 58%; border-left: 0; border-top: 1px solid var(--line); box-shadow: 0 -8px 24px rgb(0 0 0 / .18); }
+  .stats { display: none; }
+  .bar h1 { font-size: 17px; }
+}
+/* Start screen: the team photo full screen with one button into the viewer, which loads behind it. */
+.splash { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; background: #1b242e; color: #fff; transition: opacity .45s ease, visibility .45s; }
+.splash.leaving { opacity: 0; visibility: hidden; }
+.splash img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; }
+.splash::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, rgb(10 14 18 / .8), rgb(10 14 18 / .3) 35%, transparent 60%); }
+.splash-content { position: relative; z-index: 1; max-width: 640px; padding: 0 max(16px, 5vw) max(28px, 7vh); }
+.splash-eyebrow { font: 600 13px/1 var(--font-display); letter-spacing: .14em; text-transform: uppercase; opacity: .85; }
+.splash h2 { margin: 8px 0 22px; font: 600 clamp(36px, 6vw, 64px)/1.02 var(--font-display); text-shadow: 0 2px 14px rgb(0 0 0 / .4); }
+.splash button { display: inline-flex; align-items: center; gap: 10px; padding: 15px 28px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-fg); font: 600 19px/1 var(--font-display); letter-spacing: .03em; cursor: pointer; box-shadow: 0 6px 22px rgb(0 0 0 / .35); }
+.splash button:hover { filter: brightness(1.08); }
+.splash button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.splash button svg { width: 16px; height: 16px; fill: currentColor; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div id="splash" class="splash">
+  <img src="Start_image.jpg" alt="The team in front of a wooden house in the forest">
+  <div class="splash-content">
+    <div class="splash-eyebrow">JustBuildAHouse</div>
+    <h2 id="splash-name">Husprojekt</h2>
+    <button id="btn-start" type="button">Start the viewer <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg></button>
+  </div>
+</div>
+<script>{ const h = location.hash.slice(1); if (h && h !== 'orbit') document.getElementById('splash').hidden = true; }</script>
+
+<div class="app">
+  <header class="bar">
+    <div class="brand">
+      <span class="eyebrow">JustBuildAHouse</span>
+      <h1 id="house-name">House</h1>
+    </div>
+    <div class="stats" aria-live="polite">
+      <span id="stat-area"></span>
+      <span id="stat-footprint"></span>
+      <span id="stat-rooms"></span>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="View">
+        <button id="btn-3d" class="on" aria-pressed="true">3D</button><button id="btn-plan" aria-pressed="false">Plan</button>
+      </div>
+      <div class="seg" role="group" aria-label="Camera">
+        <button id="btn-orbit" class="on" aria-pressed="true">Orbit</button><button id="btn-top" aria-pressed="false">Top</button><button id="btn-walk" aria-pressed="false">Walk</button><button id="btn-tour" aria-pressed="false" title="Guided walk through the house">Tour</button>
+      </div>
+      <div class="seg" id="floor-seg" role="group" aria-label="Floor" hidden></div>
+      <button id="btn-roof" class="toggle on" aria-pressed="true">Roof</button>
+      <button id="btn-furn" class="toggle on" aria-pressed="true">Furniture</button>
+      <button id="btn-panel" class="toggle" aria-expanded="false">Details</button>
+    </div>
+  </header>
+
+  <main class="stage">
+    <section class="viewport" id="viewport" aria-label="3D view">
+      <canvas id="gl"></canvas>
+      <div id="plan-wrap" class="plan" hidden></div>
+      <div id="walk-help" class="hint" hidden></div>
+      <div id="dpad" class="dpad" hidden aria-label="Move">
+        <button data-key="KeyW" aria-label="Forward">&#9650;</button>
+        <button data-key="KeyA" aria-label="Left">&#9664;</button>
+        <button data-key="KeyS" aria-label="Back">&#9660;</button>
+        <button data-key="KeyD" aria-label="Right">&#9654;</button>
+      </div>
+      <div id="tour-bar" class="tourbar" hidden role="group" aria-label="Tour">
+        <button id="tour-play" class="tb-btn primary" aria-label="Play tour"></button>
+        <div class="tb-info"><div id="tour-where" class="tb-where" aria-live="polite"></div><div class="tb-track"><div id="tour-fill" class="tb-fill"></div></div></div>
+        <button id="tour-stop" class="tb-btn" aria-label="End tour"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.7 2.3 8 6.6l4.3-4.3 1.4 1.4L9.4 8l4.3 4.3-1.4 1.4L8 9.4l-4.3 4.3-1.4-1.4L6.6 8 2.3 3.7z"/></svg></button>
+      </div>
+      <div id="status" class="status" hidden role="status"></div>
+    </section>
+
+    <aside class="panel" id="panel">
+      <nav class="tabs" aria-label="Details">
+        <button data-tab="rooms" class="on">Rooms</button>
+        <button data-tab="spec">Spec</button>
+        <button data-tab="help">How to</button>
+      </nav>
+      <div class="tab" id="tab-rooms">
+        <p class="desc" id="house-desc"></p>
+        <table>
+          <thead><tr><th>Room</th><th class="num">W × D (m)</th><th class="num">m²</th></tr></thead>
+          <tbody id="rooms-body"></tbody>
+          <tfoot id="rooms-foot"></tfoot>
+        </table>
+      </div>
+      <div class="tab" id="tab-spec" hidden>
+        <label for="spec-text" class="desc">Edit the numbers, then Apply. Copy JSON to hand the result back to Claude Code.</label>
+        <textarea id="spec-text" spellcheck="false" autocomplete="off"></textarea>
+        <div class="row">
+          <button id="btn-apply" class="btn primary">Apply</button>
+          <button id="btn-reset" class="btn">Reset</button>
+          <button id="btn-copy" class="btn">Copy JSON</button>
+        </div>
+        <p id="spec-msg" class="msg"></p>
+      </div>
+      <div class="tab help" id="tab-help" hidden>
+        <h3>Moving around</h3>
+        <ul>
+          <li><b>Orbit</b>: drag to turn, scroll or pinch to zoom, right-drag or two fingers to pan.</li>
+          <li><b>Top</b>: straight down, like a dollhouse. Turn the roof off to see inside.</li>
+          <li><b>Walk</b>: click the view, drag to look, <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows to move, <kbd>Shift</kbd> to hurry, <kbd>Esc</kbd> to leave.</li>
+          <li><b>Tour</b>: a guided walk through every room, up and down the stairs. <kbd>Space</kbd> or the play button pauses, drag to look around on the way, any movement key takes over in Walk, <kbd>Esc</kbd> ends it. The Plan view shows the route while a tour is loaded.</li>
+          <li><b>Plan</b>: the same house as a scaled 2D drawing with dimensions.</li>
+          <li><b>Floors</b>: pick a storey to see it as a dollhouse with everything above removed, or All for the whole house. The Plan view follows the same choice.</li>
+        </ul>
+        <h3>Changing the house</h3>
+        <p>Everything comes from one JSON spec. Open the Spec tab, change a number, press Apply. The walls, doors, roof, plan and areas are all derived from it.</p>
+        <ul>
+          <li><code>rooms</code>: rectangles in metres. <code>x</code>,<code>y</code> is the south-west corner, <code>w</code> runs east, <code>d</code> runs north. Rooms that touch share a wall automatically.</li>
+          <li><code>openings</code>: <code>type</code> is <code>door</code>, <code>window</code> or <code>opening</code>. Place it on a <code>room</code> and a <code>side</code> (north, south, east, west). <code>offset</code> is measured from the west end of a north or south wall, and from the south end of an east or west wall.</li>
+          <li>Windows take <code>sill</code> and <code>height</code>. Doors swing into the room they are placed on.</li>
+          <li><code>roof</code>: <code>gable</code> or <code>flat</code>, with <code>pitch</code> in degrees, <code>overhang</code>, and <code>ridge</code> set to <code>x</code>, <code>y</code> or <code>auto</code>.</li>
+          <li><code>wallHeight</code>, <code>exteriorWall</code>, <code>interiorWall</code>: metres.</li>
+          <li><code>site.lake</code>: a lake on the plot, placed with the same <code>x</code>, <code>y</code>, <code>w</code>, <code>d</code> convention as a room, plus an optional <code>rotate</code> in degrees. Remove it for a dry plot.</li>
+          <li><code>floors</code>: a list of storeys, each with <code>name</code>, <code>level</code> (0 is the entrance floor, negative is below ground), <code>height</code> and its own <code>rooms</code>, <code>openings</code>, <code>decks</code> and <code>stairs</code>. Storeys stack automatically with a 0.3 m slab between them.</li>
+          <li><code>decks</code>: terraces at that storey’s level, <code>material</code> <code>wood</code> (on posts down to the ground) or <code>stone</code>; a wooden deck well above the ground gets a railing on its free edges, or set <code>railing</code> to true or false. <code>stairs</code>: <code>x</code>, <code>y</code>, <code>w</code>, <code>d</code>, <code>dir</code> and <code>shape</code> <code>straight</code> or <code>u</code>, rising to the storey above.</li>
+          <li><code>site.terrain</code>: ground height <code>high</code> north of <code>highY</code> and <code>low</code> south of <code>lowY</code>, sloping between, for a house dug into a hillside.</li>
+          <li><code>site.trees</code>: a <code>list</code> of trees (<code>x</code>, <code>y</code>, <code>h</code>, <code>kind</code> leaf, pine or birch) and/or a <code>scatter</code> (<code>count</code>, <code>seed</code>, <code>area</code>) that plants trees at random but never on the house, decks or lake. Change the seed for another arrangement.</li>
+          <li><code>site.plot</code> (boundary <code>hedge</code>, <code>fence</code> or <code>none</code>, with <code>sides</code>), <code>site.paths</code> (polyline <code>points</code>, <code>width</code>, gravel or stone), <code>site.jetty</code>, <code>site.beds</code> (flowers or shrubs) and <code>site.neighbours</code> (plain house blocks with <code>h</code> and a roof) dress the plot. Paths cut a gap through the boundary where they cross it.</li>
+          <li><code>furniture</code> on a room: items with a <code>type</code> (bed, single-bed, sofa, armchair, chair, table, coffee-table, desk, nightstand, wardrobe, shelf, tv-bench, bench, kitchen, island, stove, fridge, appliance, toilet, basin, bathtub, shower, sauna-bench, or box with a <code>label</code>), a centre <code>x</code>, <code>y</code> in metres from the room's south-west corner, optional <code>w</code>, <code>d</code>, <code>h</code> and <code>rot</code> (0, 90, 180, 270; the back of beds, sofas and chairs points to the item's own south before turning). The Furniture button hides them all.</li>
+          <li><code>tour</code>: the route for the Tour button, as <code>stops</code>, each a room name or <code>{ "level": 1, "room": "Kök", "pause": 2 }</code>, or <code>x</code>,<code>y</code> for a spot outside. A stop without <code>level</code> stays on the storey of the one before. <code>look</code> (a room name or <code>{x, y}</code>) turns the view during a pause, <code>speed</code> is metres per second. The tour finds its own way through the doors and up the stairs. Leave <code>tour</code> out and it visits every room.</li>
+        </ul>
+        <h3>Working with Claude Code</h3>
+        <p>Say what you want changed. Claude edits <code>house.json</code>, runs <code>node build.mjs</code> and republishes this page. If you tweaked the spec here, press Copy JSON and paste it into the chat so the file catches up.</p>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const BUILT_IN_SPEC = /*SPEC-START*/{
+  "name": "Husprojekt",
+  "description": "Three storeys on a slope down to the lake: souterräng with guest room, sauna and utility rooms, entrance from the north into a hall beside the open kitchen, dining and living room, a central hall from the deck door to the kitchen with the bathroom and a large dining room on its east side, a railed deck to the south, and four bedrooms upstairs. Every room has twice the area of the drawing: about 11.7 × 19.0 m outside.",
+  "units": "m",
+  "exteriorWall": 0.3,
+  "interiorWall": 0.12,
+  "slab": 0.3,
+  "roof": {
+    "type": "gable",
+    "pitch": 27,
+    "overhang": 0.5,
+    "ridge": "y"
+  },
+  "exterior": {
+    "preset": "ochre"
+  },
+  "site": {
+    "lake": {
+      "x": -8.5,
+      "y": -33.95,
+      "w": 36.8,
+      "d": 19.8,
+      "rotate": -12
+    },
+    "terrain": {
+      "high": -0.1,
+      "low": -2.8,
+      "highY": 18.8,
+      "lowY": 6.8
+    },
+    "trees": {
+      "list": [
+        {
+          "x": 16.5,
+          "y": 20.5,
+          "h": 11,
+          "kind": "leaf"
+        },
+        {
+          "x": -6.5,
+          "y": 15,
+          "h": 9,
+          "kind": "leaf"
+        },
+        {
+          "x": 15,
+          "y": -9,
+          "h": 7,
+          "kind": "birch"
+        },
+        {
+          "x": 17.5,
+          "y": -11.5,
+          "h": 6,
+          "kind": "birch"
+        },
+        {
+          "x": -5,
+          "y": -10,
+          "h": 8,
+          "kind": "birch"
+        }
+      ],
+      "scatter": {
+        "count": 42,
+        "seed": 11,
+        "spacing": 4,
+        "area": {
+          "x": -34,
+          "y": -40,
+          "w": 78,
+          "d": 78
+        }
+      }
+    },
+    "plot": {
+      "x": -20,
+      "y": -16,
+      "w": 50,
+      "d": 52,
+      "boundary": "hedge",
+      "sides": [
+        "north",
+        "east",
+        "west"
+      ]
+    },
+    "paths": [
+      {
+        "name": "Infart",
+        "material": "gravel",
+        "width": 3.5,
+        "points": [
+          [
+            10.15,
+            36
+          ],
+          [
+            10.15,
+            26.2
+          ]
+        ]
+      },
+      {
+        "name": "Parkering",
+        "material": "gravel",
+        "width": 6,
+        "points": [
+          [
+            8.4,
+            26.2
+          ],
+          [
+            8.4,
+            20.9
+          ]
+        ]
+      },
+      {
+        "name": "Stig till bryggan",
+        "material": "gravel",
+        "width": 1.2,
+        "points": [
+          [
+            3,
+            -5.2
+          ],
+          [
+            5.5,
+            -9.5
+          ],
+          [
+            8.3,
+            -13
+          ]
+        ]
+      }
+    ],
+    "jetty": {
+      "x": 7.3,
+      "y": -20.5,
+      "w": 2,
+      "d": 7.5,
+      "height": 0.6
+    },
+    "beds": [
+      {
+        "x": 0.3,
+        "y": 19,
+        "w": 8,
+        "d": 1.2,
+        "plants": "flowers"
+      },
+      {
+        "x": -2.6,
+        "y": -5,
+        "w": 1.6,
+        "d": 5,
+        "plants": "shrubs"
+      },
+      {
+        "x": 10.2,
+        "y": -8,
+        "w": 3,
+        "d": 2,
+        "plants": "flowers"
+      }
+    ],
+    "neighbours": [
+      {
+        "x": 38,
+        "y": 20,
+        "w": 9,
+        "d": 12,
+        "h": 5.6,
+        "roof": "gable",
+        "ridge": "y"
+      },
+      {
+        "x": -37,
+        "y": 22,
+        "w": 11,
+        "d": 8,
+        "h": 5.2,
+        "roof": "gable",
+        "ridge": "x"
+      },
+      {
+        "x": 36,
+        "y": -8,
+        "w": 8,
+        "d": 6,
+        "h": 3.4,
+        "roof": "gable",
+        "ridge": "x"
+      }
+    ]
+  },
+  "floors": [
+    {
+      "name": "Souterrängvåning",
+      "level": -1,
+      "height": 2.4,
+      "rooms": [
+        {
+          "name": "Förråd",
+          "x": 0,
+          "y": 11.3,
+          "w": 4.25,
+          "d": 7.1,
+          "floor": "concrete",
+          "furniture": [
+            {
+              "type": "shelf",
+              "x": 0.15,
+              "y": 4,
+              "w": 4,
+              "rot": 270
+            },
+            {
+              "type": "shelf",
+              "x": 2.1,
+              "y": 6.95,
+              "w": 3.6,
+              "rot": 180
+            },
+            {
+              "type": "shelf",
+              "x": 4.1,
+              "y": 5,
+              "w": 2.5,
+              "rot": 90
+            }
+          ]
+        },
+        {
+          "name": "Teknikrum",
+          "x": 4.25,
+          "y": 13.7,
+          "w": 6.8,
+          "d": 4.7,
+          "floor": "concrete",
+          "furniture": [
+            {
+              "type": "box",
+              "x": 6.3,
+              "y": 4.2,
+              "w": 0.7,
+              "d": 0.7,
+              "h": 1.9,
+              "label": "Värmepump"
+            },
+            {
+              "type": "box",
+              "x": 5.4,
+              "y": 4.2,
+              "w": 0.6,
+              "d": 0.6,
+              "h": 1.8,
+              "label": "Varmvattenberedare"
+            },
+            {
+              "type": "shelf",
+              "x": 0.15,
+              "y": 2.5,
+              "w": 1.6,
+              "rot": 270
+            }
+          ]
+        },
+        {
+          "name": "Sluss/Hall",
+          "x": 4.25,
+          "y": 6.8,
+          "w": 2.8,
+          "d": 6.9,
+          "floor": "tile",
+          "furniture": [
+            {
+              "type": "bench",
+              "x": 2.6,
+              "y": 5.5,
+              "rot": 90
+            }
+          ]
+        },
+        {
+          "name": "Tvättstuga",
+          "x": 7.05,
+          "y": 8.2,
+          "w": 4,
+          "d": 5.5,
+          "floor": "tile",
+          "furniture": [
+            {
+              "type": "appliance",
+              "x": 0.6,
+              "y": 5.2,
+              "rot": 180,
+              "label": "Tvättmaskin"
+            },
+            {
+              "type": "appliance",
+              "x": 1.3,
+              "y": 5.2,
+              "rot": 180,
+              "label": "Torktumlare"
+            },
+            {
+              "type": "kitchen",
+              "x": 3,
+              "y": 5.2,
+              "w": 2,
+              "rot": 180,
+              "sink": true
+            },
+            {
+              "type": "shelf",
+              "x": 0.15,
+              "y": 4,
+              "w": 1.2,
+              "rot": 270
+            }
+          ]
+        },
+        {
+          "name": "WC",
+          "x": 7.05,
+          "y": 6.8,
+          "w": 4,
+          "d": 1.4,
+          "floor": "tile",
+          "furniture": [
+            {
+              "type": "toilet",
+              "x": 3.5,
+              "y": 0.7,
+              "rot": 90
+            },
+            {
+              "type": "basin",
+              "x": 2,
+              "y": 0.25
+            }
+          ]
+        },
+        {
+          "name": "Trapphall",
+          "x": 0,
+          "y": 6.8,
+          "w": 4.25,
+          "d": 4.5,
+          "floor": "slate"
+        },
+        {
+          "name": "Bastu",
+          "x": 0,
+          "y": 3.8,
+          "w": 4.25,
+          "d": 3,
+          "floor": "pine",
+          "furniture": [
+            {
+              "type": "sauna-bench",
+              "x": 1.8,
+              "y": 2.7,
+              "w": 3,
+              "rot": 180,
+              "tiers": 2
+            },
+            {
+              "type": "sauna-bench",
+              "x": 0.5,
+              "y": 1.2,
+              "w": 2,
+              "rot": 270
+            },
+            {
+              "type": "box",
+              "x": 3.9,
+              "y": 2.5,
+              "w": 0.5,
+              "d": 0.5,
+              "h": 0.8,
+              "label": "Aggregat"
+            }
+          ]
+        },
+        {
+          "name": "Allrum",
+          "x": 0,
+          "y": 0,
+          "w": 4.25,
+          "d": 3.8,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "table",
+              "x": 2,
+              "y": 2.3,
+              "w": 1.4,
+              "d": 0.9
+            },
+            {
+              "type": "chair",
+              "x": 1.65,
+              "y": 1.5499999999999998
+            },
+            {
+              "type": "chair",
+              "x": 1.65,
+              "y": 3.05,
+              "rot": 180
+            },
+            {
+              "type": "chair",
+              "x": 2.3499999999999996,
+              "y": 1.5499999999999998
+            },
+            {
+              "type": "chair",
+              "x": 2.3499999999999996,
+              "y": 3.05,
+              "rot": 180
+            },
+            {
+              "type": "shelf",
+              "x": 2,
+              "y": 3.65,
+              "w": 1.6,
+              "rot": 180
+            }
+          ]
+        },
+        {
+          "name": "Gästrum / Allrum",
+          "x": 4.25,
+          "y": 0,
+          "w": 6.8,
+          "d": 6.8,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "sofa",
+              "x": 4.5,
+              "y": 0.6,
+              "w": 2.4
+            },
+            {
+              "type": "coffee-table",
+              "x": 4.5,
+              "y": 1.9
+            },
+            {
+              "type": "sofa",
+              "x": 6.3,
+              "y": 2,
+              "w": 1.8,
+              "rot": 90
+            },
+            {
+              "type": "armchair",
+              "x": 2.3,
+              "y": 2.3,
+              "rot": 270
+            },
+            {
+              "type": "tv-bench",
+              "x": 5,
+              "y": 6.55,
+              "rot": 180
+            }
+          ]
+        }
+      ],
+      "openings": [
+        {
+          "type": "window",
+          "room": "Allrum",
+          "side": "south",
+          "offset": 1.4,
+          "width": 2.15
+        },
+        {
+          "type": "opening",
+          "room": "Allrum",
+          "side": "east",
+          "offset": 0.15,
+          "width": 3.55,
+          "height": 2.2
+        },
+        {
+          "type": "door",
+          "room": "Gästrum / Allrum",
+          "side": "south",
+          "offset": 0.85,
+          "width": 0.9,
+          "label": "Uteplats"
+        },
+        {
+          "type": "window",
+          "room": "Gästrum / Allrum",
+          "side": "south",
+          "offset": 3.4,
+          "width": 2.25
+        },
+        {
+          "type": "window",
+          "room": "Gästrum / Allrum",
+          "side": "east",
+          "offset": 4.25,
+          "width": 1.4
+        },
+        {
+          "type": "door",
+          "room": "Gästrum / Allrum",
+          "side": "north",
+          "offset": 0.7,
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "room": "Bastu",
+          "side": "east",
+          "offset": 0.6,
+          "width": 0.7
+        },
+        {
+          "type": "opening",
+          "room": "Trapphall",
+          "side": "east",
+          "offset": 0.55,
+          "width": 3.4,
+          "height": 2.2
+        },
+        {
+          "type": "door",
+          "room": "Förråd",
+          "side": "east",
+          "offset": 0.45,
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "room": "Teknikrum",
+          "side": "south",
+          "offset": 1.4,
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "room": "Tvättstuga",
+          "side": "west",
+          "offset": 2,
+          "width": 0.8
+        },
+        {
+          "type": "window",
+          "room": "Tvättstuga",
+          "side": "east",
+          "offset": 2.25,
+          "width": 1.45,
+          "sill": 1.2,
+          "height": 0.9
+        },
+        {
+          "type": "door",
+          "room": "WC",
+          "side": "west",
+          "offset": 0.2,
+          "width": 0.7
+        }
+      ],
+      "decks": [
+        {
+          "name": "Uteplats",
+          "x": -0.4,
+          "y": -5.1,
+          "w": 11.85,
+          "d": 5.1,
+          "material": "stone"
+        }
+      ],
+      "stairs": [
+        {
+          "x": 0.2,
+          "y": 7,
+          "w": 3.85,
+          "d": 4.1,
+          "dir": "north",
+          "shape": "u",
+          "steps": 14
+        }
+      ]
+    },
+    {
+      "name": "Bottenvåning (entréplan)",
+      "level": 0,
+      "height": 2.6,
+      "rooms": [
+        {
+          "name": "Kök",
+          "x": 0,
+          "y": 11.3,
+          "w": 6.9,
+          "d": 7.1,
+          "floor": "tile",
+          "furniture": [
+            {
+              "type": "kitchen",
+              "x": 3.3,
+              "y": 6.8,
+              "w": 6.4,
+              "rot": 180,
+              "sink": true
+            },
+            {
+              "type": "kitchen",
+              "x": 0.3,
+              "y": 1.95,
+              "w": 3.3,
+              "rot": 270,
+              "stove": true
+            },
+            {
+              "type": "fridge",
+              "x": 0.35,
+              "y": 5.7,
+              "rot": 270
+            },
+            {
+              "type": "island",
+              "x": 3.3,
+              "y": 4,
+              "w": 2.4,
+              "d": 1
+            }
+          ]
+        },
+        {
+          "name": "Hall",
+          "x": 6.9,
+          "y": 16,
+          "w": 4.15,
+          "d": 2.4,
+          "floor": "slate",
+          "furniture": [
+            {
+              "type": "wardrobe",
+              "x": 0.3,
+              "y": 1.2,
+              "rot": 270
+            },
+            {
+              "type": "bench",
+              "x": 3.5,
+              "y": 0.2
+            }
+          ]
+        },
+        {
+          "name": "Matplats",
+          "x": 6.9,
+          "y": 9.5,
+          "w": 4.15,
+          "d": 6.5,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "table",
+              "x": 2.1,
+              "y": 4.3,
+              "w": 3,
+              "d": 1.1,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 1.25,
+              "y": 3.175,
+              "rot": 270
+            },
+            {
+              "type": "chair",
+              "x": 2.95,
+              "y": 3.175,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 1.25,
+              "y": 3.925,
+              "rot": 270
+            },
+            {
+              "type": "chair",
+              "x": 2.95,
+              "y": 3.925,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 1.25,
+              "y": 4.675,
+              "rot": 270
+            },
+            {
+              "type": "chair",
+              "x": 2.95,
+              "y": 4.675,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 1.25,
+              "y": 5.425,
+              "rot": 270
+            },
+            {
+              "type": "chair",
+              "x": 2.95,
+              "y": 5.425,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 2.1,
+              "y": 2.5
+            },
+            {
+              "type": "chair",
+              "x": 2.1,
+              "y": 6.1,
+              "rot": 180
+            },
+            {
+              "type": "sofa",
+              "x": 1.1,
+              "y": 1.2,
+              "w": 2,
+              "rot": 270
+            },
+            {
+              "type": "coffee-table",
+              "x": 2.3,
+              "y": 1.2,
+              "rot": 90
+            },
+            {
+              "type": "armchair",
+              "x": 3.5,
+              "y": 1.2,
+              "rot": 90
+            }
+          ]
+        },
+        {
+          "name": "Trapphall",
+          "x": 0,
+          "y": 6.8,
+          "w": 3.7,
+          "d": 4.5,
+          "floor": "slate"
+        },
+        {
+          "name": "Korridor",
+          "x": 3.7,
+          "y": 1.85,
+          "w": 3.2,
+          "d": 9.45,
+          "floor": "slate",
+          "furniture": [
+            {
+              "type": "wardrobe",
+              "x": 0.3,
+              "y": 1.2,
+              "rot": 270
+            },
+            {
+              "type": "bench",
+              "x": 2.95,
+              "y": 1.5,
+              "rot": 90
+            }
+          ]
+        },
+        {
+          "name": "Badrum",
+          "x": 6.9,
+          "y": 6.8,
+          "w": 4.15,
+          "d": 2.7,
+          "floor": "tile",
+          "furniture": [
+            {
+              "type": "bathtub",
+              "x": 3.7,
+              "y": 1.35,
+              "rot": 90
+            },
+            {
+              "type": "shower",
+              "x": 0.5,
+              "y": 2.2
+            },
+            {
+              "type": "toilet",
+              "x": 1.75,
+              "y": 2.35,
+              "rot": 180
+            },
+            {
+              "type": "basin",
+              "x": 1.6,
+              "y": 0.25
+            }
+          ]
+        },
+        {
+          "name": "Arbetsrum",
+          "x": 0,
+          "y": 1.85,
+          "w": 3.7,
+          "d": 4.95,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "desk",
+              "x": 1.85,
+              "y": 4.6,
+              "w": 1.6,
+              "rot": 180
+            },
+            {
+              "type": "chair",
+              "x": 1.85,
+              "y": 3.95
+            },
+            {
+              "type": "shelf",
+              "x": 0.15,
+              "y": 2,
+              "rot": 270
+            },
+            {
+              "type": "shelf",
+              "x": 0.15,
+              "y": 3,
+              "rot": 270
+            }
+          ]
+        },
+        {
+          "name": "Sovrum mormor/gäster",
+          "x": 6.9,
+          "y": 1.85,
+          "w": 4.15,
+          "d": 4.95,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "bed",
+              "x": 2.1,
+              "y": 3.9,
+              "rot": 180
+            },
+            {
+              "type": "nightstand",
+              "x": 1,
+              "y": 4.7
+            },
+            {
+              "type": "nightstand",
+              "x": 3.2,
+              "y": 4.7
+            },
+            {
+              "type": "wardrobe",
+              "x": 0.3,
+              "y": 2,
+              "rot": 270
+            }
+          ]
+        }
+      ],
+      "openings": [
+        {
+          "type": "window",
+          "room": "Kök",
+          "side": "north",
+          "offset": 1.55,
+          "width": 1.55
+        },
+        {
+          "type": "window",
+          "room": "Kök",
+          "side": "north",
+          "offset": 4.2,
+          "width": 1.4
+        },
+        {
+          "type": "window",
+          "room": "Kök",
+          "side": "west",
+          "offset": 3.7,
+          "width": 1.4
+        },
+        {
+          "type": "window",
+          "room": "Arbetsrum",
+          "side": "south",
+          "offset": 1,
+          "width": 1.7
+        },
+        {
+          "type": "door",
+          "room": "Arbetsrum",
+          "side": "east",
+          "offset": 3.1,
+          "width": 0.9
+        },
+        {
+          "type": "window",
+          "room": "Sovrum mormor/gäster",
+          "side": "south",
+          "offset": 1,
+          "width": 2.1
+        },
+        {
+          "type": "window",
+          "room": "Sovrum mormor/gäster",
+          "side": "east",
+          "offset": 1.55,
+          "width": 1.7
+        },
+        {
+          "type": "door",
+          "room": "Sovrum mormor/gäster",
+          "side": "west",
+          "offset": 3.55,
+          "width": 0.9
+        },
+        {
+          "type": "opening",
+          "room": "Kök",
+          "side": "south",
+          "offset": 0.4,
+          "width": 2.9,
+          "height": 2.6
+        },
+        {
+          "type": "opening",
+          "room": "Kök",
+          "side": "south",
+          "offset": 3.9,
+          "width": 2.6,
+          "height": 2.6
+        },
+        {
+          "type": "door",
+          "room": "Hall",
+          "side": "north",
+          "offset": 2.45,
+          "width": 1,
+          "label": "Entré"
+        },
+        {
+          "type": "window",
+          "room": "Hall",
+          "side": "north",
+          "offset": 0.6,
+          "width": 1.4
+        },
+        {
+          "type": "window",
+          "room": "Hall",
+          "side": "east",
+          "offset": 0.7,
+          "width": 1
+        },
+        {
+          "type": "opening",
+          "room": "Hall",
+          "side": "south",
+          "offset": 0.1,
+          "width": 4,
+          "height": 2.3
+        },
+        {
+          "type": "window",
+          "room": "Matplats",
+          "side": "east",
+          "offset": 0.3,
+          "width": 1.2
+        },
+        {
+          "type": "window",
+          "room": "Matplats",
+          "side": "east",
+          "offset": 2.3,
+          "width": 1.6
+        },
+        {
+          "type": "window",
+          "room": "Matplats",
+          "side": "east",
+          "offset": 4.6,
+          "width": 1.6
+        },
+        {
+          "type": "opening",
+          "room": "Matplats",
+          "side": "west",
+          "offset": 0.2,
+          "width": 1.6,
+          "height": 2.6
+        },
+        {
+          "type": "opening",
+          "room": "Matplats",
+          "side": "west",
+          "offset": 2.1,
+          "width": 3.6,
+          "height": 2.6
+        },
+        {
+          "type": "door",
+          "room": "Badrum",
+          "side": "west",
+          "offset": 0.6,
+          "width": 0.8
+        },
+        {
+          "type": "window",
+          "room": "Badrum",
+          "side": "east",
+          "offset": 0.9,
+          "width": 0.8,
+          "sill": 1.3,
+          "height": 0.8
+        },
+        {
+          "type": "door",
+          "room": "Korridor",
+          "side": "south",
+          "offset": 1.1,
+          "width": 1,
+          "label": "Altan"
+        },
+        {
+          "type": "opening",
+          "room": "Korridor",
+          "side": "west",
+          "offset": 5.45,
+          "width": 3.4,
+          "height": 2.3
+        }
+      ],
+      "decks": [
+        {
+          "name": "Altan",
+          "x": -0.4,
+          "y": -5.1,
+          "w": 11.85,
+          "d": 6.95,
+          "material": "wood"
+        },
+        {
+          "name": "Entré",
+          "x": 8.85,
+          "y": 18.7,
+          "w": 2.6,
+          "d": 2.1,
+          "material": "wood"
+        }
+      ],
+      "stairs": [
+        {
+          "x": 0.2,
+          "y": 7,
+          "w": 3.25,
+          "d": 4.1,
+          "dir": "north",
+          "shape": "u",
+          "steps": 15
+        }
+      ]
+    },
+    {
+      "name": "Övervåning",
+      "level": 1,
+      "height": 2.5,
+      "rooms": [
+        {
+          "name": "Barnrum 1",
+          "x": 0,
+          "y": 12.3,
+          "w": 4.8,
+          "d": 6.1,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "single-bed",
+              "x": 0.6,
+              "y": 4.9,
+              "rot": 180
+            },
+            {
+              "type": "desk",
+              "x": 4.4,
+              "y": 2.5,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 3.7,
+              "y": 2.5,
+              "rot": 270
+            },
+            {
+              "type": "wardrobe",
+              "x": 1.2,
+              "y": 0.3
+            },
+            {
+              "type": "shelf",
+              "x": 2.8,
+              "y": 0.15
+            }
+          ]
+        },
+        {
+          "name": "Föräldrasovrum",
+          "x": 4.8,
+          "y": 12.3,
+          "w": 6.25,
+          "d": 6.1,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "bed",
+              "x": 5,
+              "y": 3.6,
+              "w": 1.8,
+              "d": 2.1,
+              "rot": 90
+            },
+            {
+              "type": "nightstand",
+              "x": 5.8,
+              "y": 2.3
+            },
+            {
+              "type": "nightstand",
+              "x": 5.8,
+              "y": 4.9
+            },
+            {
+              "type": "wardrobe",
+              "x": 0.3,
+              "y": 3,
+              "rot": 270
+            },
+            {
+              "type": "wardrobe",
+              "x": 0.3,
+              "y": 4.3,
+              "rot": 270
+            },
+            {
+              "type": "desk",
+              "x": 2.4,
+              "y": 5.7,
+              "rot": 180
+            },
+            {
+              "type": "chair",
+              "x": 2.4,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "name": "Trapphall",
+          "x": 0,
+          "y": 6.5,
+          "w": 3.7,
+          "d": 5.8,
+          "floor": "slate"
+        },
+        {
+          "name": "Hall",
+          "x": 3.7,
+          "y": 6.5,
+          "w": 2.25,
+          "d": 5.8,
+          "floor": "slate",
+          "furniture": [
+            {
+              "type": "wardrobe",
+              "x": 1.95,
+              "y": 2.5,
+              "rot": 90
+            }
+          ]
+        },
+        {
+          "name": "Badrum",
+          "x": 5.95,
+          "y": 7.9,
+          "w": 5.1,
+          "d": 4.4,
+          "floor": "tile",
+          "furniture": [
+            {
+              "type": "bathtub",
+              "x": 3.9,
+              "y": 3.95
+            },
+            {
+              "type": "toilet",
+              "x": 4.75,
+              "y": 0.6,
+              "rot": 90
+            },
+            {
+              "type": "basin",
+              "x": 2,
+              "y": 0.25
+            },
+            {
+              "type": "shower",
+              "x": 0.5,
+              "y": 0.5,
+              "w": 1,
+              "d": 1
+            }
+          ]
+        },
+        {
+          "name": "Barnrum 2",
+          "x": 5.95,
+          "y": 1.85,
+          "w": 5.1,
+          "d": 6.05,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "single-bed",
+              "x": 1.2,
+              "y": 5,
+              "rot": 180
+            },
+            {
+              "type": "desk",
+              "x": 4.4,
+              "y": 2.6,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 3.7,
+              "y": 2.6,
+              "rot": 270
+            },
+            {
+              "type": "wardrobe",
+              "x": 0.3,
+              "y": 2,
+              "rot": 270
+            },
+            {
+              "type": "shelf",
+              "x": 3,
+              "y": 5.9,
+              "rot": 180
+            }
+          ]
+        },
+        {
+          "name": "Barnrum 3",
+          "x": 0,
+          "y": 0,
+          "w": 5.95,
+          "d": 6.5,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "single-bed",
+              "x": 1,
+              "y": 5.5,
+              "rot": 180
+            },
+            {
+              "type": "desk",
+              "x": 5.6,
+              "y": 2.5,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 4.9,
+              "y": 2.5,
+              "rot": 270
+            },
+            {
+              "type": "wardrobe",
+              "x": 2.6,
+              "y": 6.2,
+              "rot": 180
+            },
+            {
+              "type": "shelf",
+              "x": 5.8,
+              "y": 4.8,
+              "rot": 90
+            }
+          ]
+        }
+      ],
+      "openings": [
+        {
+          "type": "window",
+          "room": "Barnrum 1",
+          "side": "north",
+          "offset": 1.25,
+          "width": 2.15
+        },
+        {
+          "type": "window",
+          "room": "Barnrum 1",
+          "side": "west",
+          "offset": 2,
+          "width": 1.7
+        },
+        {
+          "type": "door",
+          "room": "Barnrum 1",
+          "side": "south",
+          "offset": 3.7,
+          "width": 0.8
+        },
+        {
+          "type": "window",
+          "room": "Föräldrasovrum",
+          "side": "north",
+          "offset": 1.7,
+          "width": 2.55
+        },
+        {
+          "type": "window",
+          "room": "Föräldrasovrum",
+          "side": "east",
+          "offset": 2.1,
+          "width": 2
+        },
+        {
+          "type": "door",
+          "room": "Föräldrasovrum",
+          "side": "south",
+          "offset": 0,
+          "width": 0.8
+        },
+        {
+          "type": "door",
+          "room": "Badrum",
+          "side": "west",
+          "offset": 2.3,
+          "width": 0.8
+        },
+        {
+          "type": "window",
+          "room": "Badrum",
+          "side": "east",
+          "offset": 1.6,
+          "width": 1.1,
+          "sill": 1.3,
+          "height": 0.8
+        },
+        {
+          "type": "door",
+          "room": "Barnrum 2",
+          "side": "west",
+          "offset": 4.8,
+          "width": 0.9
+        },
+        {
+          "type": "window",
+          "room": "Barnrum 2",
+          "side": "south",
+          "offset": 1.4,
+          "width": 2.15
+        },
+        {
+          "type": "window",
+          "room": "Barnrum 2",
+          "side": "east",
+          "offset": 1.7,
+          "width": 1.95
+        },
+        {
+          "type": "door",
+          "room": "Barnrum 3",
+          "side": "north",
+          "offset": 4.1,
+          "width": 0.9
+        },
+        {
+          "type": "window",
+          "room": "Barnrum 3",
+          "side": "south",
+          "offset": 1.7,
+          "width": 2.25
+        },
+        {
+          "type": "window",
+          "room": "Barnrum 3",
+          "side": "west",
+          "offset": 2,
+          "width": 1.7
+        },
+        {
+          "type": "opening",
+          "room": "Trapphall",
+          "side": "east",
+          "offset": 0.55,
+          "width": 4.55,
+          "height": 2.3
+        }
+      ]
+    }
+  ]
+}/*SPEC-END*/;
+console.log("[jbah] module start");
+
+// ---------- helpers ----------
+const DEFAULTS = { wallHeight: 2.7, exteriorWall: 0.3, interiorWall: 0.12, slab: 0.3, doorWidth: 0.9, doorHeight: 2.1, windowWidth: 1.2, windowHeight: 1.2, windowSill: 0.9 };
+// Furniture catalogue: default width, depth, height and how it is drawn.
+const FURNITURE = {
+  'bed': { w: 1.6, d: 2.0, h: 0.55, build: 'bed' }, 'single-bed': { w: 0.9, d: 2.0, h: 0.55, build: 'bed' },
+  'sofa': { w: 2.2, d: 0.9, h: 0.85, build: 'seat' }, 'armchair': { w: 0.9, d: 0.9, h: 0.85, build: 'seat' }, 'chair': { w: 0.45, d: 0.45, h: 0.85, build: 'chair' },
+  'coffee-table': { w: 1.1, d: 0.6, h: 0.45, build: 'table' }, 'table': { w: 1.8, d: 0.9, h: 0.75, build: 'table' }, 'desk': { w: 1.4, d: 0.7, h: 0.75, build: 'table' },
+  'nightstand': { w: 0.45, d: 0.4, h: 0.5, build: 'block', mat: 'furnWood' }, 'wardrobe': { w: 1.2, d: 0.6, h: 2.1, build: 'block', mat: 'furnWood', glyph: 'doors' },
+  'shelf': { w: 0.8, d: 0.3, h: 1.8, build: 'block', mat: 'furnDark', glyph: 'hatch' }, 'tv-bench': { w: 1.6, d: 0.4, h: 0.5, build: 'block', mat: 'furnDark' }, 'bench': { w: 1.2, d: 0.4, h: 0.45, build: 'block', mat: 'furnWood' },
+  'kitchen': { w: 2.4, d: 0.6, h: 0.9, build: 'counter' }, 'island': { w: 2.0, d: 0.9, h: 0.9, build: 'counter' }, 'stove': { w: 0.6, d: 0.6, h: 0.9, build: 'counter', stove: true },
+  'fridge': { w: 0.6, d: 0.65, h: 1.9, build: 'block', mat: 'appliance' }, 'appliance': { w: 0.6, d: 0.6, h: 0.85, build: 'block', mat: 'appliance' },
+  'toilet': { w: 0.4, d: 0.65, h: 0.8, build: 'toilet' }, 'basin': { w: 0.6, d: 0.45, h: 0.85, build: 'basin' }, 'bathtub': { w: 1.7, d: 0.75, h: 0.55, build: 'tub' }, 'shower': { w: 0.9, d: 0.9, h: 2.0, build: 'shower' },
+  'sauna-bench': { w: 2.0, d: 0.6, h: 0.45, build: 'sauna' }, 'box': { w: 1.0, d: 1.0, h: 1.0, build: 'block', mat: 'appliance' },
+};
+const SIDES = { north: { axis: 'x', out: 1 }, south: { axis: 'x', out: -1 }, east: { axis: 'y', out: 1 }, west: { axis: 'y', out: -1 } };
+const FLOOR_COLORS = { oak: '#c99a66', pine: '#dcb98a', walnut: '#7a5236', tile: '#cdd3d8', concrete: '#b6b1a9', carpet: '#9fb0a1', slate: '#6c7680' };
+const floorColor = f => FLOOR_COLORS[f] || (/^#([0-9a-f]{3}){1,2}$/i.test(f || '') ? f : FLOOR_COLORS.oak);
+
+// Exterior: typical Swedish facade, roof and trim combinations. A preset sets everything; facade, roof, trim and plinth override it piece by piece.
+const EXTERIOR_COLORS = {
+  falu: '#7b2b21', ochre: '#d6b067', limewhite: '#ece8df', white: '#f4f1ea', pearlgrey: '#bdbbb3', grey: '#8f8f8b',
+  darkgrey: '#4a4c4e', black: '#2a2826', tilered: '#9a4630', brick: '#a5503a', yellowbrick: '#d9c08a', wood: '#b48a5e', concrete: '#a8a6a0',
+};
+const FACADE_MATERIALS = ['board-vertical', 'board-horizontal', 'render', 'brick'];
+const ROOF_MATERIALS = ['tile', 'metal', 'felt'];
+const EXTERIOR_PRESETS = {
+  falu:  { facade: { material: 'board-vertical', color: 'falu' }, trim: 'white', roof: { material: 'tile', color: 'black' }, plinth: { material: 'render', color: 'concrete' } },
+  ochre: { facade: { material: 'board-vertical', color: 'ochre' }, trim: 'white', roof: { material: 'tile', color: 'tilered' }, plinth: { material: 'render', color: 'concrete' } },
+  white: { facade: { material: 'board-horizontal', color: 'limewhite' }, trim: 'white', roof: { material: 'metal', color: 'black' }, plinth: { material: 'render', color: 'concrete' } },
+  grey:  { facade: { material: 'board-horizontal', color: 'pearlgrey' }, trim: 'white', roof: { material: 'tile', color: 'black' }, plinth: { material: 'render', color: 'concrete' } },
+  black: { facade: { material: 'board-vertical', color: 'black' }, trim: 'wood', roof: { material: 'metal', color: 'black' }, plinth: { material: 'render', color: 'darkgrey' } },
+};
+const isHex = c => typeof c === 'string' && /^#([0-9a-f]{3}){1,2}$/i.test(c);
+const extColor = (c, fallback) => EXTERIOR_COLORS[c] || (isHex(c) ? c : fallback);
+function resolveExterior(x) {
+  x = x && typeof x === 'object' && !Array.isArray(x) ? x : {};
+  const preset = EXTERIOR_PRESETS[x.preset] ? x.preset : 'ochre', p = EXTERIOR_PRESETS[preset];
+  const part = (v, def, list) => {
+    const o = typeof v === 'string' ? { color: v } : (v && typeof v === 'object' ? v : {});
+    return { material: list.includes(o.material) ? o.material : def.material, color: extColor(o.color, extColor(def.color)) };
+  };
+  const pl = x.plinth === false ? null : (x.plinth && typeof x.plinth === 'object' ? x.plinth : {});
+  return {
+    preset,
+    facade: part(x.facade, p.facade, FACADE_MATERIALS),
+    roof: part(x.roof, p.roof, ROOF_MATERIALS),
+    trim: extColor(x.trim && typeof x.trim === 'object' ? x.trim.color : x.trim, extColor(p.trim)),
+    plinth: pl && { ...part(pl, p.plinth, FACADE_MATERIALS), height: isNum(pl.height) ? pl.height : 0.35, floors: Array.isArray(pl.floors) ? pl.floors.filter(isNum) : [] },
+  };
+}
+const fmt = v => Number(v.toFixed(2)).toString();
+const fmt1 = v => Number(v.toFixed(1)).toString();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const isNum = v => typeof v === 'number' && isFinite(v);
+const EPS = 1e-6;
+
+// ---------- spec normalisation ----------
+// A spec is either a single floor (rooms/openings at the top level) or a list of floors. Both become the same shape here.
+function normalizeSpec(spec) {
+  const slab = isNum(spec.slab) ? spec.slab : DEFAULTS.slab;
+  const defaultH = isNum(spec.wallHeight) ? spec.wallHeight : DEFAULTS.wallHeight;
+  let floors = Array.isArray(spec.floors) && spec.floors.length
+    ? spec.floors.map((f, i) => ({ ...f, level: isNum(f.level) ? f.level : i }))
+    : [{ name: spec.floorName || 'Plan', level: 0, height: spec.wallHeight, rooms: spec.rooms, openings: spec.openings, decks: spec.decks, stairs: spec.stairs }];
+  floors = floors.map(f => ({
+    name: f.name || `Level ${f.level}`, level: f.level, height: isNum(f.height) ? f.height : defaultH, elevation: f.elevation,
+    rooms: f.rooms || [], openings: f.openings || [], decks: f.decks || [], stairs: f.stairs || [],
+  }));
+  floors.sort((a, b) => a.level - b.level);
+  let gi = floors.findIndex(f => f.level === 0);
+  if (gi < 0) gi = floors.findIndex(f => f.level > 0);
+  if (gi < 0) gi = 0;
+  if (!isNum(floors[gi].elevation)) floors[gi].elevation = 0;
+  for (let i = gi + 1; i < floors.length; i++) if (!isNum(floors[i].elevation)) floors[i].elevation = floors[i - 1].elevation + floors[i - 1].height + slab;
+  for (let i = gi - 1; i >= 0; i--) if (!isNum(floors[i].elevation)) floors[i].elevation = floors[i + 1].elevation - floors[i].height - slab;
+  const t = spec.site && spec.site.terrain;
+  let terrain = t ? { high: t.high ?? 0, low: t.low ?? 0, highY: t.highY ?? 0, lowY: t.lowY ?? -1 } : { high: 0, low: 0, highY: 1, lowY: 0 };
+  if (!(terrain.highY > terrain.lowY)) terrain = { high: terrain.high, low: terrain.high, highY: 1, lowY: 0 };
+  const l = spec.site && spec.site.lake;
+  const lake = l ? { x: l.x, y: l.y, w: l.w, d: l.d, rotate: l.rotate || 0 } : null;
+  const tr = spec.site && spec.site.trees;
+  const trees = tr ? { list: Array.isArray(tr) ? tr : (Array.isArray(tr.list) ? tr.list : []), scatter: !Array.isArray(tr) && tr.scatter ? tr.scatter : null } : { list: [], scatter: null };
+  const st = spec.site || {};
+  const rect = o => ({ x: o.x, y: o.y, w: o.w, d: o.d });
+  const plot = st.plot ? { ...rect(st.plot), boundary: ['hedge', 'fence', 'none'].includes(st.plot.boundary) ? st.plot.boundary : 'hedge', sides: Array.isArray(st.plot.sides) ? st.plot.sides.filter(s => SIDES[s]) : ['north', 'east', 'south', 'west'] } : null;
+  const paths = (Array.isArray(st.paths) ? st.paths : []).filter(p => p && Array.isArray(p.points) && p.points.length >= 2)
+    .map(p => ({ name: p.name || 'Path', width: isNum(p.width) ? p.width : 1.2, material: p.material === 'stone' ? 'stone' : 'gravel', points: p.points.map(q => [q[0], q[1]]) }));
+  const jetty = st.jetty ? { ...rect(st.jetty), height: isNum(st.jetty.height) ? st.jetty.height : 0.6 } : null;
+  const beds = (Array.isArray(st.beds) ? st.beds : []).map(b => ({ ...rect(b), plants: b.plants === 'shrubs' ? 'shrubs' : 'flowers' }));
+  const neighbours = (Array.isArray(st.neighbours) ? st.neighbours : []).map(n => ({ ...rect(n), h: isNum(n.h) ? n.h : 5.5, roof: n.roof === 'flat' ? 'flat' : 'gable', ridge: n.ridge || 'auto', pitch: isNum(n.pitch) ? n.pitch : 30 }));
+  return {
+    name: spec.name, description: spec.description, trees, plot, paths, jetty, beds, neighbours,
+    exteriorWall: isNum(spec.exteriorWall) ? spec.exteriorWall : DEFAULTS.exteriorWall,
+    interiorWall: isNum(spec.interiorWall) ? spec.interiorWall : DEFAULTS.interiorWall,
+    slab, roof: spec.roof || {}, exterior: resolveExterior(spec.exterior), floors, groundIndex: gi, terrain, lake,
+  };
+}
+
+// ---------- spec validation ----------
+function validate(spec) {
+  const errors = [], warnings = [];
+  if (!spec || typeof spec !== 'object' || Array.isArray(spec)) return { errors: ['The spec must be a JSON object.'], warnings };
+  if (spec.floors != null && !Array.isArray(spec.floors)) return { errors: ['"floors" must be an array.'], warnings };
+  const multi = Array.isArray(spec.floors) && spec.floors.length > 0;
+  const floors = multi ? spec.floors : [spec];
+  if (multi) {
+    const levels = new Set();
+    spec.floors.forEach((f, i) => {
+      if (!f || typeof f !== 'object') { errors.push(`Floor #${i + 1}: must be an object.`); return; }
+      if (f.level != null && !isNum(f.level)) errors.push(`Floor #${i + 1}: "level" must be a number.`);
+      else if (isNum(f.level)) { if (levels.has(f.level)) errors.push(`Floor "${f.name || i + 1}": duplicate level ${f.level}.`); levels.add(f.level); }
+    });
+    if (errors.length) return { errors, warnings };
+  }
+  const allRooms = [];
+  floors.forEach((f, fi) => {
+    const P = multi ? `${f.name || 'Floor ' + (fi + 1)}: ` : '';
+    const rooms = f.rooms;
+    if (!Array.isArray(rooms) || rooms.length === 0) { errors.push(`${P}"rooms" must be a non-empty array.`); return; }
+    const names = new Set();
+    rooms.forEach((r, i) => {
+      const label = r && typeof r.name === 'string' && r.name ? `room "${r.name}"` : `room #${i + 1}`;
+      if (!r || typeof r !== 'object') { errors.push(`${P}${label} must be an object.`); return; }
+      if (typeof r.name !== 'string' || !r.name) errors.push(`${P}${label} needs a "name".`);
+      else if (names.has(r.name)) errors.push(`${P}${label}: duplicate name.`);
+      else names.add(r.name);
+      for (const k of ['x', 'y', 'w', 'd']) if (!isNum(r[k])) errors.push(`${P}${label}: "${k}" must be a number.`);
+      if (isNum(r.w) && isNum(r.d) && (r.w <= 0 || r.d <= 0)) errors.push(`${P}${label}: "w" and "d" must be positive.`);
+      if (r.furniture != null && !Array.isArray(r.furniture)) errors.push(`${P}${label}: "furniture" must be an array.`);
+      (Array.isArray(r.furniture) ? r.furniture : []).forEach((it, j) => {
+        if (!it || typeof it !== 'object') { errors.push(`${P}${label}: furniture #${j + 1} must be an object.`); return; }
+        if (!isNum(it.x) || !isNum(it.y)) { errors.push(`${P}${label}: furniture #${j + 1} needs numeric x and y.`); return; }
+        const def = FURNITURE[it.type];
+        if (!def) { warnings.push(`${P}${label}: unknown furniture type "${it.type}", shown as a box.`); return; }
+        if (isNum(r.w) && isNum(r.d)) {
+          const turned = Math.round((it.rot || 0) / 90) % 2 !== 0, w = it.w ?? def.w, d = it.d ?? def.d, ex = (turned ? d : w) / 2, ey = (turned ? w : d) / 2;
+          if (it.x - ex < -0.01 || it.x + ex > r.w + 0.01 || it.y - ey < -0.01 || it.y + ey > r.d + 0.01) warnings.push(`${P}${label}: ${it.type} at (${it.x}, ${it.y}) pokes out of the room.`);
+        }
+      });
+    });
+    if (errors.length) return;
+    allRooms.push(...rooms);
+    for (let i = 0; i < rooms.length; i++) for (let j = i + 1; j < rooms.length; j++) {
+      const a = rooms[i], b = rooms[j];
+      if (a.x + a.w > b.x + EPS && b.x + b.w > a.x + EPS && a.y + a.d > b.y + EPS && b.y + b.d > a.y + EPS) warnings.push(`${P}rooms "${a.name}" and "${b.name}" overlap.`);
+    }
+    if (f.openings != null && !Array.isArray(f.openings)) errors.push(`${P}"openings" must be an array.`);
+    (Array.isArray(f.openings) ? f.openings : []).forEach((o, i) => {
+      const tag = `${P}opening #${i + 1}`;
+      if (!o || typeof o !== 'object') { errors.push(`${tag}: must be an object.`); return; }
+      const room = rooms.find(r => r.name === o.room);
+      if (!room) { errors.push(`${tag}: unknown room "${o.room}".`); return; }
+      if (!SIDES[o.side]) { errors.push(`${tag} (${o.room}): side must be north, south, east or west.`); return; }
+      if (!['door', 'window', 'opening'].includes(o.type)) errors.push(`${tag} (${o.room}): type must be door, window or opening.`);
+      const len = SIDES[o.side].axis === 'x' ? room.w : room.d;
+      const w = o.width ?? (o.type === 'window' ? DEFAULTS.windowWidth : DEFAULTS.doorWidth);
+      if ((o.offset ?? 0) + w > len + EPS) warnings.push(`${P}${o.type} on ${o.room} ${o.side}: offset ${o.offset ?? 0} + width ${w} runs past the ${fmt(len)} m wall.`);
+    });
+    (Array.isArray(f.decks) ? f.decks : []).forEach((d, i) => {
+      for (const k of ['x', 'y', 'w', 'd']) if (!d || !isNum(d[k])) errors.push(`${P}deck #${i + 1}: "${k}" must be a number.`);
+    });
+    (Array.isArray(f.stairs) ? f.stairs : []).forEach((s, i) => {
+      for (const k of ['x', 'y', 'w', 'd']) if (!s || !isNum(s[k])) errors.push(`${P}stair #${i + 1}: "${k}" must be a number.`);
+      if (s && s.dir != null && !SIDES[s.dir]) errors.push(`${P}stair #${i + 1}: dir must be north, south, east or west.`);
+    });
+  });
+  if (errors.length) return { errors, warnings };
+  if (spec.site && spec.site.lake) {
+    const l = spec.site.lake;
+    for (const k of ['x', 'y', 'w', 'd']) if (!isNum(l[k])) errors.push('site.lake: "' + k + '" must be a number.');
+    if (!errors.length && allRooms.length) {
+      const hx0 = Math.min(...allRooms.map(r => r.x)), hx1 = Math.max(...allRooms.map(r => r.x + r.w));
+      const hy0 = Math.min(...allRooms.map(r => r.y)), hy1 = Math.max(...allRooms.map(r => r.y + r.d));
+      if (l.x < hx1 && l.x + l.w > hx0 && l.y < hy1 && l.y + l.d > hy0) warnings.push('The lake overlaps the house footprint.');
+    }
+  }
+  if (spec.site && spec.site.trees) {
+    const tr = spec.site.trees, list = Array.isArray(tr) ? tr : (Array.isArray(tr.list) ? tr.list : []);
+    list.forEach((t, i) => { for (const k of ['x', 'y']) if (!t || !isNum(t[k])) errors.push(`site.trees #${i + 1}: "${k}" must be a number.`); });
+    const sc = !Array.isArray(tr) && tr.scatter;
+    if (sc) { if (!isNum(sc.count)) errors.push('site.trees.scatter: "count" must be a number.'); if (!sc.area || !['x', 'y', 'w', 'd'].every(k => isNum(sc.area[k]))) errors.push('site.trees.scatter: "area" needs numeric x, y, w, d.'); }
+  }
+  if (spec.site) {
+    const st = spec.site, rectOk = o => o && ['x', 'y', 'w', 'd'].every(k => isNum(o[k]));
+    if (st.plot && !rectOk(st.plot)) errors.push('site.plot needs numeric x, y, w, d.');
+    if (st.jetty && !rectOk(st.jetty)) errors.push('site.jetty needs numeric x, y, w, d.');
+    for (const [key, list] of [['beds', st.beds], ['neighbours', st.neighbours]]) if (list != null) {
+      if (!Array.isArray(list)) errors.push(`site.${key} must be an array.`);
+      else list.forEach((o, i) => { if (!rectOk(o)) errors.push(`site.${key} #${i + 1} needs numeric x, y, w, d.`); });
+    }
+    if (st.paths != null) {
+      if (!Array.isArray(st.paths)) errors.push('site.paths must be an array.');
+      else st.paths.forEach((p, i) => { if (!p || !Array.isArray(p.points) || p.points.length < 2 || !p.points.every(q => Array.isArray(q) && isNum(q[0]) && isNum(q[1]))) errors.push(`site.paths #${i + 1}: "points" must be a list of at least two [x, y] pairs.`); });
+    }
+  }
+  if (spec.site && spec.site.terrain) {
+    const t = spec.site.terrain;
+    for (const k of ['high', 'low', 'highY', 'lowY']) if (t[k] != null && !isNum(t[k])) errors.push('site.terrain: "' + k + '" must be a number.');
+  }
+  if (spec.exterior != null) {
+    const x = spec.exterior, colors = Object.keys(EXTERIOR_COLORS).join(', ');
+    if (typeof x !== 'object' || Array.isArray(x)) errors.push('"exterior" must be an object.');
+    else {
+      if (x.preset != null && !EXTERIOR_PRESETS[x.preset]) warnings.push(`exterior.preset "${x.preset}" is unknown, using ochre. Presets: ${Object.keys(EXTERIOR_PRESETS).join(', ')}.`);
+      const check = (key, v, list) => {
+        if (v == null || v === false) return;
+        const o = typeof v === 'string' ? { color: v } : v;
+        if (o.material != null && !list.includes(o.material)) warnings.push(`exterior.${key}.material "${o.material}" is unknown. Use ${list.join(', ')}.`);
+        if (o.color != null && extColor(o.color, null) == null) warnings.push(`exterior.${key} colour "${o.color}" is unknown. Use a hex colour or ${colors}.`);
+      };
+      check('facade', x.facade, FACADE_MATERIALS); check('roof', x.roof, ROOF_MATERIALS); check('plinth', x.plinth, FACADE_MATERIALS);
+      const trim = x.trim && typeof x.trim === 'object' ? x.trim.color : x.trim;
+      if (trim != null && extColor(trim, null) == null) warnings.push(`exterior.trim colour "${trim}" is unknown. Use a hex colour or ${colors}.`);
+    }
+  }
+  return { errors, warnings };
+}
+
+
+// ---------- geometry derivation ----------
+function subtractInterval(list, lo, hi) {
+  const out = [];
+  for (const [a, b] of list) {
+    if (hi <= a + EPS || lo >= b - EPS) { out.push([a, b]); continue; }
+    if (lo > a + EPS) out.push([a, lo]);
+    if (hi < b - EPS) out.push([hi, b]);
+  }
+  return out;
+}
+
+function normalizeFurniture(r) {
+  return (Array.isArray(r.furniture) ? r.furniture : []).filter(it => it && isNum(it.x) && isNum(it.y)).map(it => {
+    const def = FURNITURE[it.type] || FURNITURE.box;
+    return { type: FURNITURE[it.type] ? it.type : 'box', def, x: it.x, y: it.y, w: isNum(it.w) ? it.w : def.w, d: isNum(it.d) ? it.d : def.d, h: isNum(it.h) ? it.h : def.h,
+      rot: ((Math.round((it.rot || 0) / 90) * 90) % 360 + 360) % 360, label: it.label || (FURNITURE[it.type] ? '' : String(it.type || '')), sink: !!it.sink, stove: !!it.stove || !!def.stove, tiers: it.tiers === 2 ? 2 : 1 };
+  });
+}
+
+function deriveFloor(f, index, norm) {
+  const tExt = norm.exteriorWall, tInt = norm.interiorWall, H = f.height;
+  const rooms = f.rooms.map(r => ({ name: r.name, x: r.x, y: r.y, w: r.w, d: r.d, x2: r.x + r.w, y2: r.y + r.d, area: r.w * r.d, floor: r.floor || 'oak', furniture: normalizeFurniture(r) }));
+  const inside = (px, py) => rooms.some(r => px > r.x + EPS && px < r.x2 - EPS && py > r.y + EPS && py < r.y2 - EPS);
+
+  // Every room edge, grouped by the line it lies on.
+  const edges = [];
+  for (const r of rooms) {
+    edges.push({ room: r, side: 'south', axis: 'x', c: r.y, a: r.x, b: r.x2, out: -1 });
+    edges.push({ room: r, side: 'north', axis: 'x', c: r.y2, a: r.x, b: r.x2, out: 1 });
+    edges.push({ room: r, side: 'west', axis: 'y', c: r.x, a: r.y, b: r.y2, out: -1 });
+    edges.push({ room: r, side: 'east', axis: 'y', c: r.x2, a: r.y, b: r.y2, out: 1 });
+  }
+  const groups = new Map();
+  for (const e of edges) { const k = e.axis + ':' + Math.round(e.c * 1000); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e); }
+
+  // Shared parts of an edge become interior walls (once); the rest becomes exterior wall, pushed outward by half its thickness.
+  const segments = [], seen = new Set();
+  for (const [k, list] of groups) {
+    for (const e of list) {
+      let remaining = [[e.a, e.b]];
+      for (const o of list) {
+        if (o === e || o.room === e.room || o.out === e.out) continue;
+        const lo = Math.max(e.a, o.a), hi = Math.min(e.b, o.b);
+        if (hi - lo <= EPS) continue;
+        const ik = `${k}:${Math.round(lo * 1000)}:${Math.round(hi * 1000)}`;
+        if (!seen.has(ik)) { seen.add(ik); segments.push({ axis: e.axis, cEdge: e.c, c: e.c, a: lo, b: hi, kind: 'int', t: tInt, rooms: [e.room.name, o.room.name], openings: [] }); }
+        remaining = subtractInterval(remaining, lo, hi);
+      }
+      for (const [a, b] of remaining) if (b - a > EPS) segments.push({ axis: e.axis, cEdge: e.c, c: e.c + e.out * tExt / 2, a, b, kind: 'ext', t: tExt, out: e.out, rooms: [e.room.name], openings: [] });
+    }
+  }
+  // Extend wall ends so corners close: interior walls by half a thickness (to the centreline of the wall they meet),
+  // exterior walls by a full thickness (to the outer face of the wall they meet), unless that would poke into a room
+  // or run into a collinear neighbour segment.
+  for (const s of segments) {
+    const half = s.t / 2;
+    if (s.kind === 'int') { s.a0 = s.a - half; s.b0 = s.b + half; continue; }
+    const blocked = p => (s.axis === 'x' ? inside(p, s.c) : inside(s.c, p))
+      || segments.some(o => o !== s && o.kind === 'ext' && o.axis === s.axis && Math.abs(o.cEdge - s.cEdge) < EPS && p > o.a - EPS && p < o.b + EPS);
+    s.a0 = blocked(s.a - 0.01) ? s.a : s.a - s.t;
+    s.b0 = blocked(s.b + 0.01) ? s.b : s.b + s.t;
+  }
+
+  // Openings, located on the line of the room's side and attached to the wall segments they cut.
+  const openings = f.openings.map((o, i) => {
+    const room = rooms.find(r => r.name === o.room), sd = SIDES[o.side];
+    const isWin = o.type === 'window';
+    const width = o.width ?? (isWin ? DEFAULTS.windowWidth : DEFAULTS.doorWidth);
+    const height = o.height ?? (isWin ? DEFAULTS.windowHeight : DEFAULTS.doorHeight);
+    const sill = isWin ? (o.sill ?? DEFAULTS.windowSill) : 0;
+    const start = sd.axis === 'x' ? room.x : room.y;
+    const lo = start + (o.offset ?? 0);
+    const cEdge = sd.axis === 'x' ? (o.side === 'north' ? room.y2 : room.y) : (o.side === 'east' ? room.x2 : room.x);
+    return { id: i, type: o.type, room, side: o.side, axis: sd.axis, cEdge, out: sd.out, lo, hi: lo + width, width, sill, top: Math.min(sill + height, H), label: o.label || '', segment: null, floorIndex: index };
+  });
+  for (const op of openings) {
+    const cands = segments.filter(s => s.axis === op.axis && Math.abs(s.cEdge - op.cEdge) < EPS && Math.min(s.b, op.hi) - Math.max(s.a, op.lo) > EPS);
+    for (const s of cands) s.openings.push({ ...op, lo: Math.max(s.a, op.lo), hi: Math.min(s.b, op.hi) });
+    const mid = (op.lo + op.hi) / 2;
+    op.segment = cands.find(s => mid >= s.a - EPS && mid <= s.b + EPS) || cands[0] || null;
+  }
+
+  // Split each segment into solid pieces, lintels above openings and sills below windows.
+  for (const s of segments) {
+    s.openings.sort((p, q) => p.lo - q.lo);
+    const pieces = []; let cursor = s.a;
+    for (const o of s.openings) {
+      if (o.lo > cursor + EPS) pieces.push({ a: cursor, b: o.lo, y0: 0, y1: H, solid: true });
+      if (o.top < H - EPS) pieces.push({ a: o.lo, b: o.hi, y0: o.top, y1: H });
+      if (o.sill > EPS) pieces.push({ a: o.lo, b: o.hi, y0: 0, y1: o.sill });
+      cursor = Math.max(cursor, o.hi);
+    }
+    if (cursor < s.b - EPS) pieces.push({ a: cursor, b: s.b, y0: 0, y1: H, solid: true });
+    for (const p of pieces) { if (Math.abs(p.a - s.a) < EPS) p.a = s.a0; if (Math.abs(p.b - s.b) < EPS) p.b = s.b0; }
+    s.pieces = pieces;
+  }
+
+  const minX = Math.min(...rooms.map(r => r.x)), maxX = Math.max(...rooms.map(r => r.x2));
+  const minY = Math.min(...rooms.map(r => r.y)), maxY = Math.max(...rooms.map(r => r.y2));
+  const bbox = { minX: minX - tExt, maxX: maxX + tExt, minY: minY - tExt, maxY: maxY + tExt };
+  const decks = f.decks.map(d => ({ name: d.name || 'Deck', x: d.x, y: d.y, w: d.w, d: d.d, area: d.w * d.d, material: d.material === 'stone' ? 'stone' : 'wood', railing: d.railing }));
+  const stairs = f.stairs.map(s => ({ x: s.x, y: s.y, w: s.w, d: s.d, dir: SIDES[s.dir] ? s.dir : 'north', shape: s.shape === 'u' ? 'u' : 'straight', steps: isNum(s.steps) && s.steps >= 2 ? Math.round(s.steps) : 14 }));
+  return { index, name: f.name, level: f.level, elevation: f.elevation, H, rooms, segments, openings, decks, stairs, bbox, totalArea: rooms.reduce((s, r) => s + r.area, 0) };
+}
+
+// A rectangle with holes cut out, as a list of axis-aligned pieces (used for slabs, ceilings and floors around stairwells).
+function cutRect(rect, holes) {
+  let pieces = [rect];
+  for (const h of holes) {
+    const next = [];
+    for (const p of pieces) {
+      const ix0 = Math.max(p.x, h.x), ix1 = Math.min(p.x + p.w, h.x + h.w), iy0 = Math.max(p.y, h.y), iy1 = Math.min(p.y + p.d, h.y + h.d);
+      if (ix1 - ix0 <= EPS || iy1 - iy0 <= EPS) { next.push(p); continue; }
+      if (iy0 > p.y + EPS) next.push({ x: p.x, y: p.y, w: p.w, d: iy0 - p.y });
+      if (p.y + p.d > iy1 + EPS) next.push({ x: p.x, y: iy1, w: p.w, d: p.y + p.d - iy1 });
+      if (ix0 > p.x + EPS) next.push({ x: p.x, y: iy0, w: ix0 - p.x, d: iy1 - iy0 });
+      if (p.x + p.w > ix1 + EPS) next.push({ x: ix1, y: iy0, w: p.x + p.w - ix1, d: iy1 - iy0 });
+    }
+    pieces = next;
+  }
+  return pieces;
+}
+const stairHoles = f => f ? f.stairs.map(st => ({ x: st.x, y: st.y, w: st.w, d: st.d })) : [];
+
+function unionBox(boxes) {
+  return { minX: Math.min(...boxes.map(b => b.minX)), maxX: Math.max(...boxes.map(b => b.maxX)), minY: Math.min(...boxes.map(b => b.minY)), maxY: Math.max(...boxes.map(b => b.maxY)) };
+}
+
+function deriveModel(spec) {
+  const norm = normalizeSpec(spec);
+  const floors = norm.floors.map((f, i) => deriveFloor(f, i, norm));
+  const bbox = unionBox(floors.map(f => f.bbox));
+  const boxes = [bbox, ...floors.flatMap(f => f.decks.map(d => ({ minX: d.x, maxX: d.x + d.w, minY: d.y, maxY: d.y + d.d })))];
+  if (norm.lake) boxes.push({ minX: norm.lake.x, maxX: norm.lake.x + norm.lake.w, minY: norm.lake.y, maxY: norm.lake.y + norm.lake.d });
+  const site = unionBox(boxes);
+  const rooms = floors.flatMap(f => f.rooms.map(r => ({ ...r, floorIndex: f.index, floorName: f.name })));
+  const openings = floors.flatMap(f => f.openings);
+  const grow = (b, m) => ({ minX: b.x - m, maxX: b.x + b.w + m, minY: b.y - m, maxY: b.y + b.d + m });
+  const keepOff = [...norm.neighbours.map(n => grow(n, 2.5)), ...norm.beds.map(b => grow(b, 0.6))];
+  if (norm.jetty) keepOff.push(grow(norm.jetty, 1.5));
+  for (const p of norm.paths) for (let i = 0; i < p.points.length - 1; i++) {
+    const [a, b] = [p.points[i], p.points[i + 1]], m = p.width / 2 + 1;
+    keepOff.push({ minX: Math.min(a[0], b[0]) - m, maxX: Math.max(a[0], b[0]) + m, minY: Math.min(a[1], b[1]) - m, maxY: Math.max(a[1], b[1]) + m });
+  }
+  const trees = resolveTrees(norm.trees, bbox, floors, norm.lake, keepOff);
+  if (norm.plot) { site.minX = Math.min(site.minX, norm.plot.x); site.maxX = Math.max(site.maxX, norm.plot.x + norm.plot.w); site.minY = Math.min(site.minY, norm.plot.y); site.maxY = Math.max(site.maxY, norm.plot.y + norm.plot.d); }
+  return {
+    spec, norm, floors, bbox, site, lake: norm.lake, terrain: norm.terrain, slab: norm.slab, rooms, openings, trees,
+    plot: norm.plot, paths: norm.paths, jetty: norm.jetty, beds: norm.beds, neighbours: norm.neighbours,
+    totalArea: floors.reduce((s, f) => s + f.totalArea, 0), groundIndex: norm.groundIndex, topIndex: floors.length - 1,
+  };
+}
+
+// Trees: the hand-placed list plus a seeded scatter that stays clear of the house, decks and lake.
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const TREE_KINDS = ['leaf', 'leaf', 'pine', 'birch'];
+function resolveTrees(spec, bbox, floors, lake, keepOff = []) {
+  const grow = (b, m) => ({ minX: b.minX - m, maxX: b.maxX + m, minY: b.minY - m, maxY: b.maxY + m });
+  const out = spec.list.map(t => ({ x: t.x, y: t.y, h: isNum(t.h) ? t.h : 7, kind: TREE_KINDS.includes(t.kind) ? t.kind : 'leaf' }));
+  const sc = spec.scatter;
+  if (sc) {
+    const avoid = [grow(bbox, 2.5), ...floors.flatMap(f => f.decks.map(d => grow({ minX: d.x, maxX: d.x + d.w, minY: d.y, maxY: d.y + d.d }, 1.5)))];
+    if (lake) avoid.push(grow({ minX: lake.x, maxX: lake.x + lake.w, minY: lake.y, maxY: lake.y + lake.d }, 2));
+    avoid.push(...keepOff);
+    const rnd = mulberry32(isNum(sc.seed) ? sc.seed : 1), kinds = Array.isArray(sc.kinds) && sc.kinds.length ? sc.kinds : TREE_KINDS;
+    const gap = isNum(sc.spacing) ? sc.spacing : 3.5;
+    let tries = 0, placed = 0;
+    while (placed < sc.count && tries++ < sc.count * 60) {
+      const x = sc.area.x + rnd() * sc.area.w, y = sc.area.y + rnd() * sc.area.d;
+      if (avoid.some(b => x > b.minX && x < b.maxX && y > b.minY && y < b.maxY)) continue;
+      if (out.some(t => (t.x - x) ** 2 + (t.y - y) ** 2 < gap * gap)) continue;
+      out.push({ x, y, h: 5 + rnd() * 6, kind: kinds[(rnd() * kinds.length) | 0] }); placed++;
+    }
+  }
+  return out;
+}
+
+// Stretches of a deck's outline that do not touch a room of its storey, as plan segments.
+function deckFreeRuns(dk, f) {
+  const edges = [
+    { a: [dk.x, dk.y], b: [dk.x + dk.w, dk.y], n: [0, -1] },
+    { a: [dk.x + dk.w, dk.y], b: [dk.x + dk.w, dk.y + dk.d], n: [1, 0] },
+    { a: [dk.x + dk.w, dk.y + dk.d], b: [dk.x, dk.y + dk.d], n: [0, 1] },
+    { a: [dk.x, dk.y + dk.d], b: [dk.x, dk.y], n: [-1, 0] },
+  ];
+  const nearRoom = (px, py) => f.rooms.some(r => px > r.x - 0.4 && px < r.x2 + 0.4 && py > r.y - 0.4 && py < r.y2 + 0.4);
+  const runs = [];
+  for (const e of edges) {
+    const len = Math.hypot(e.b[0] - e.a[0], e.b[1] - e.a[1]); if (len < EPS) continue;
+    const ux = (e.b[0] - e.a[0]) / len, uy = (e.b[1] - e.a[1]) / len, n = Math.max(1, Math.ceil(len / 0.5)), step = len / n;
+    let start = null;
+    for (let i = 0; i <= n; i++) {
+      const tm = (i + 0.5) * step;
+      const free = i < n && !nearRoom(e.a[0] + ux * tm + e.n[0] * 0.3, e.a[1] + uy * tm + e.n[1] * 0.3);
+      if (free && start == null) start = i * step;
+      if (!free && start != null) { const end = i * step; if (end - start >= 0.6) runs.push({ a: [e.a[0] + ux * start, e.a[1] + uy * start], b: [e.a[0] + ux * end, e.a[1] + uy * end] }); start = null; }
+    }
+  }
+  return runs;
+}
+// A railing is wanted when asked for, or by default on a wooden deck that stands well above the ground.
+function wantsRailing(dk, f, terrain) {
+  if (dk.railing === false) return false;
+  if (dk.railing === true) return true;
+  if (dk.material === 'stone') return false;
+  const drop = f.elevation + 0.02 - Math.min(terrainHeight(terrain, dk.y), terrainHeight(terrain, dk.y + dk.d));
+  return drop > 0.6;
+}
+
+// Ground height at plan y: flat at "high" north of highY, flat at "low" south of lowY, a straight slope between.
+function terrainHeight(t, py) {
+  if (py >= t.highY) return t.high;
+  if (py <= t.lowY) return t.low;
+  return t.high + (t.low - t.high) * (t.highY - py) / (t.highY - t.lowY);
+}
+
+// Stair treads as plan rectangles with their top heights, shared by the 3D build and the plan drawing.
+// u runs along the climbing direction from the first step, v runs across from the left-hand side.
+function stairSteps(st, rise) {
+  const ns = st.dir === 'north' || st.dir === 'south';
+  const L = ns ? st.d : st.w, W = ns ? st.w : st.d;
+  const local = (u, v) => st.dir === 'north' ? [st.x + v, st.y + u]
+    : st.dir === 'south' ? [st.x + st.w - v, st.y + st.d - u]
+    : st.dir === 'east' ? [st.x + u, st.y + st.d - v]
+    : [st.x + st.w - u, st.y + v];
+  const rect = (u0, u1, v0, v1, top) => {
+    const [ax, ay] = local(u0, v0), [bx, by] = local(u1, v1);
+    return { x: Math.min(ax, bx), y: Math.min(ay, by), w: Math.abs(bx - ax), d: Math.abs(by - ay), top };
+  };
+  const steps = [], n = st.steps;
+  let arrowEnd = L - 0.1, arrowV = W / 2;
+  if (st.shape === 'u') {
+    const land = Math.min(W / 2 + 0.2, L / 2), run = L - land;
+    const n1 = Math.ceil(n / 2), n2 = n - n1;
+    for (let i = 0; i < n1; i++) steps.push(rect(i * run / n1, (i + 1) * run / n1, 0, W / 2, (i + 1) * rise));
+    steps.push(rect(run, L, 0, W, n1 * rise));
+    for (let i = 0; i < n2; i++) steps.push(rect(run - (i + 1) * run / n2, run - i * run / n2, W / 2, W, (n1 + i + 1) * rise));
+    arrowEnd = run - 0.1; arrowV = W / 4;
+  } else {
+    for (let i = 0; i < n; i++) steps.push(rect(i * L / n, (i + 1) * L / n, 0, W, (i + 1) * rise));
+  }
+  return { steps, arrow: [local(0.1, arrowV), local(arrowEnd, arrowV)] };
+}
+
+
+// ---------- 3D build ----------
+// Plan (x east, y north) maps to world (x, -z); world y is up.
+function wallBox(s, a, b, y0, y1, t, mat) {
+  const len = Math.max(b - a, 0.001), h = Math.max(y1 - y0, 0.001);
+  const geo = s.axis === 'x' ? new THREE.BoxGeometry(len, h, t) : new THREE.BoxGeometry(t, h, len);
+  const m = new THREE.Mesh(geo, mat); const mid = (a + b) / 2;
+  if (s.axis === 'x') m.position.set(mid, (y0 + y1) / 2, -s.c); else m.position.set(s.c, (y0 + y1) / 2, -mid);
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+
+function box(w, h, d, cx, cy, cz, mat) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(cx, cy, cz); m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+
+// Materials for an exterior wall box: the outward face and the ends (which show at outer corners) get the facade, the rest the interior finish.
+// BoxGeometry faces are +x, -x, +y, -y, +z, -z; plan north (+y) is world -z.
+function extWallMats(s, outer, inner) {
+  const m = [inner, inner, inner, inner, inner, inner];
+  if (s.axis === 'x') { m[0] = m[1] = outer; m[s.out > 0 ? 5 : 4] = outer; }
+  else { m[4] = m[5] = outer; m[s.out > 0 ? 0 : 1] = outer; }
+  return m;
+}
+// A thin box laid against the outer face of an exterior wall (casings, sills).
+function faceBox(s, a, b, y0, y1, depth, mat) { return wallBox({ ...s, c: s.c + s.out * (s.t / 2 + depth / 2) }, a, b, y0, y1, depth, mat); }
+// Box-projected UVs in world metres, so a texture keeps its real size on every wall and boards line up across wall pieces.
+function metreUVs(mesh) {
+  const g = mesh.geometry, pos = g.attributes.position, nor = g.attributes.normal, uv = g.attributes.uv, o = mesh.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i) + o.x, y = pos.getY(i) + o.y, z = pos.getZ(i) + o.z;
+    if (Math.abs(nor.getX(i)) > 0.5) uv.setXY(i, z, y); else if (Math.abs(nor.getY(i)) > 0.5) uv.setXY(i, x, z); else uv.setXY(i, x, y);
+  }
+  uv.needsUpdate = true;
+  return mesh;
+}
+
+// ---------- exterior surfaces ----------
+// Each surface is drawn in greys (white is the bare paint, darker is shadow) and tinted by the material colour; the same canvas doubles as bump map.
+// w and h are the metres one copy of the canvas covers; UVs are in metres.
+const grey = (v, a = 1) => `rgba(${v | 0},${v | 0},${v | 0},${a})`;
+function speckle(ctx, W, H, rnd, n, lo, hi, alpha, size) {
+  for (let i = 0; i < n; i++) {
+    ctx.fillStyle = grey(lo + rnd() * (hi - lo), alpha);
+    const x = rnd() * W, y = rnd() * H, s = size * (0.5 + rnd());
+    for (const [dx, dy] of [[0, 0], [-W, 0], [0, -H], [-W, -H]]) ctx.fillRect(x + dx, y + dy, s, s);
+  }
+}
+// Board-and-batten (stående lockpanel): wide boards with a narrow batten over every joint, c/c 0.2 m.
+function drawBoardsVertical(ctx, W, H, rnd) {
+  const n = 5, bw = W / n, lw = bw * 0.26;
+  for (let i = 0; i < n; i++) {
+    ctx.fillStyle = grey(236 + rnd() * 14); ctx.fillRect(i * bw, 0, bw, H);
+    for (let k = 0; k < 16; k++) { ctx.fillStyle = grey(rnd() < 0.5 ? 0 : 255, 0.03 + rnd() * 0.05); ctx.fillRect(i * bw + rnd() * bw, 0, 1 + rnd() * 2, H); }
+  }
+  for (let i = 0; i <= n; i++) {
+    const x = i * bw - lw / 2;
+    ctx.fillStyle = grey(252); ctx.fillRect(x, 0, lw, H);
+    ctx.fillStyle = grey(0, 0.3); ctx.fillRect(x + lw, 0, 4, H);
+    ctx.fillStyle = grey(0, 0.12); ctx.fillRect(x + lw + 4, 0, 6, H);
+  }
+}
+// Horizontal weatherboards (liggande panel), 0.125 m each, every board throwing a shadow on the one below.
+function drawBoardsHorizontal(ctx, W, H, rnd) {
+  const n = 8, bh = H / n;
+  for (let i = 0; i < n; i++) {
+    const y = i * bh, t = 238 + rnd() * 12;
+    const g = ctx.createLinearGradient(0, y, 0, y + bh); g.addColorStop(0, grey(t - 16)); g.addColorStop(0.3, grey(t)); g.addColorStop(1, grey(Math.min(255, t + 8)));
+    ctx.fillStyle = g; ctx.fillRect(0, y, W, bh);
+    for (let k = 0; k < 10; k++) { ctx.fillStyle = grey(rnd() < 0.5 ? 0 : 255, 0.03 + rnd() * 0.05); ctx.fillRect(0, y + rnd() * bh, W, 1 + rnd() * 1.5); }
+    ctx.fillStyle = grey(0, 0.35); ctx.fillRect(0, y, W, 3);
+  }
+}
+function drawRender(ctx, W, H, rnd) { ctx.fillStyle = grey(242); ctx.fillRect(0, 0, W, H); speckle(ctx, W, H, rnd, 9000, 200, 255, 0.35, 2.5); }
+// Brick in running bond, 250 × 62 mm with 12 mm joints.
+function drawBrick(ctx, W, H, rnd) {
+  ctx.fillStyle = grey(240); ctx.fillRect(0, 0, W, H);
+  const rows = 7, ch = H / rows, bw = W / 4, j = 3;
+  for (let r = 0; r < rows; r++) for (let k = -1; k < 4; k++) {
+    ctx.fillStyle = grey(170 + rnd() * 60); ctx.fillRect(k * bw + (r % 2 ? bw / 2 : 0) + j, r * ch + j, bw - 2 * j, ch - 2 * j);
+  }
+  speckle(ctx, W, H, rnd, 3000, 120, 255, 0.15, 2);
+}
+// Roof tiles (betongpannor): rounded tiles 0.3 m wide in courses of 0.34 m, each course shading the top of the one below.
+function drawTiles(ctx, W, H, rnd) {
+  const cols = 3, rows = 2, tw = W / cols, ch = H / rows;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const f = 0.9 + rnd() * 0.1;
+    for (let x = 0; x < tw; x++) { ctx.fillStyle = grey(255 * f * (0.62 + 0.38 * Math.sin(Math.PI * x / tw))); ctx.fillRect(c * tw + x, r * ch, 1.5, ch); }
+  }
+  for (let r = 0; r < rows; r++) {
+    const g = ctx.createLinearGradient(0, r * ch, 0, r * ch + ch * 0.16); g.addColorStop(0, grey(0, 0.55)); g.addColorStop(1, grey(0, 0));
+    ctx.fillStyle = g; ctx.fillRect(0, r * ch, W, ch * 0.16);
+    ctx.fillStyle = grey(255, 0.3); ctx.fillRect(0, (r + 1) * ch - 3, W, 3);
+  }
+}
+// Standing-seam sheet metal (falsat plåttak), seams every 0.6 m.
+function drawMetal(ctx, W, H) {
+  const g = ctx.createLinearGradient(0, 0, W, 0); g.addColorStop(0, grey(230)); g.addColorStop(0.5, grey(246)); g.addColorStop(1, grey(226));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = grey(255); ctx.fillRect(0, 0, 6, H);
+  ctx.fillStyle = grey(0, 0.4); ctx.fillRect(6, 0, 4, H);
+  ctx.fillStyle = grey(0, 0.15); ctx.fillRect(10, 0, 8, H);
+}
+// Roofing felt (takpapp) with a lap every metre.
+function drawFelt(ctx, W, H, rnd) { ctx.fillStyle = grey(236); ctx.fillRect(0, 0, W, H); speckle(ctx, W, H, rnd, 7000, 170, 255, 0.4, 2); ctx.fillStyle = grey(0, 0.3); ctx.fillRect(0, 0, W, 3); }
+const SURFACES = {
+  'board-vertical':   { w: 1, h: 1, px: [512, 512], rough: 0.88, bump: 1, draw: drawBoardsVertical },
+  'board-horizontal': { w: 1, h: 1, px: [512, 512], rough: 0.88, bump: 1, draw: drawBoardsHorizontal },
+  render:             { w: 2, h: 2, px: [512, 512], rough: 0.95, bump: 0.5, draw: drawRender },
+  brick:              { w: 1, h: 0.5, px: [512, 256], rough: 0.92, bump: 1, draw: drawBrick },
+  tile:               { w: 0.9, h: 0.68, px: [512, 387], rough: 0.8, bump: 1.5, draw: drawTiles },
+  metal:              { w: 0.6, h: 0.5, px: [256, 64], rough: 0.45, metal: 0.3, bump: 1, draw: drawMetal },
+  felt:               { w: 1, h: 1, px: [512, 512], rough: 0.95, bump: 0.5, draw: drawFelt },
+};
+function surfaceTextures(kind, cache) {
+  if (cache[kind]) return cache[kind];
+  const d = SURFACES[kind], c = document.createElement('canvas'); [c.width, c.height] = d.px;
+  d.draw(c.getContext('2d'), c.width, c.height, mulberry32(29 + kind.length * 977));
+  const make = srgb => {
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / d.w, 1 / d.h); t.anisotropy = 8;
+    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  return (cache[kind] = { map: make(true), bump: make(false) });
+}
+function surfaceMaterial(part, cache, extra = {}) {
+  const d = SURFACES[part.material], t = surfaceTextures(part.material, cache);
+  return new THREE.MeshStandardMaterial({ color: new THREE.Color(part.color), roughness: d.rough, metalness: d.metal || 0, map: t.map, bumpMap: t.bump, bumpScale: d.bump, ...extra });
+}
+
+function makeLabel(name, sub) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  let size = 72;
+  ctx.font = `600 ${size}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`;
+  while (ctx.measureText(name).width > 470 && size > 28) { size -= 4; ctx.font = `600 ${size}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; }
+  ctx.fillStyle = 'rgba(22,28,34,0.8)'; ctx.fillText(name, 256, 100);
+  ctx.font = '500 46px "IBM Plex Mono", Consolas, monospace'; ctx.fillStyle = 'rgba(22,28,34,0.6)'; ctx.fillText(sub, 256, 176);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.renderOrder = 2;
+  return m;
+}
+function placeLabel(lab, x, y, w, d, yWorld) {
+  const lw = Math.min(w * 0.85, d * 1.7, 3.2);
+  lab.scale.set(lw, lw / 2, 1); lab.position.set(x + w / 2, yWorld, -(y + d / 2));
+}
+
+// One-metre grid baked into the grass so it follows the slope.
+function gridTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 64, 64);
+  ctx.fillStyle = '#d4d4d4'; ctx.fillRect(0, 0, 64, 1); ctx.fillRect(0, 0, 1, 64);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(600, 600); t.anisotropy = 8; t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+// Procedural, seamless grass: layered speckles on a green base, repeated every 4 m.
+function grassTexture() {
+  const s = 512, c = document.createElement('canvas'); c.width = c.height = s;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#7d995b'; ctx.fillRect(0, 0, s, s);
+  const rnd = mulberry32(7), palette = ['#6f8d4e', '#86a35f', '#93ad6a', '#78955a', '#9bb270', '#657f45', '#a3b878'];
+  for (let i = 0; i < 24000; i++) {
+    ctx.fillStyle = palette[(rnd() * palette.length) | 0]; ctx.globalAlpha = 0.3 + rnd() * 0.5;
+    const x = rnd() * s, y = rnd() * s, w = 1 + rnd() * 2.5, h = 2 + rnd() * 6;
+    for (const [dx, dy] of [[0, 0], [-s, 0], [0, -s], [-s, -s]]) ctx.fillRect(x + dx, y + dy, w, h);
+  }
+  ctx.globalAlpha = 1;
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(150, 150); t.anisotropy = 8; t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function buildTree(t, model, mats) {
+  const grp = new THREE.Group();
+  const gy = terrainHeight(model.terrain, t.y), h = t.h;
+  const trunkH = t.kind === 'pine' ? h * 0.3 : h * 0.38;
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(h * 0.018, h * 0.032, trunkH, 7), t.kind === 'birch' ? mats.birch : mats.trunk);
+  trunk.position.set(t.x, gy + trunkH / 2, -t.y); trunk.castShadow = true; grp.add(trunk);
+  if (t.kind === 'pine') {
+    for (let i = 0; i < 3; i++) {
+      const r = h * (0.2 - i * 0.045), ch = h * 0.3;
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(r, ch, 8), mats.pine);
+      cone.position.set(t.x, gy + trunkH + ch / 2 + i * ch * 0.55, -t.y); cone.castShadow = true; grp.add(cone);
+    }
+  } else {
+    const r = h * 0.26, mat = t.kind === 'birch' ? mats.birchLeaf : (Math.round(Math.abs(t.x * 7 + t.y * 3)) % 2 ? mats.leafA : mats.leafB);
+    const offs = [[0, 0.1, 0, 1], [0.6, -0.25, 0.4, 0.8], [-0.55, -0.2, -0.35, 0.78], [0.1, 0.5, -0.25, 0.7]];
+    for (const [ox, oy, oz, k] of offs) {
+      const s = new THREE.Mesh(new THREE.SphereGeometry(r * k, 8, 6), mat);
+      s.position.set(t.x + ox * r, gy + trunkH + r * 0.7 + oy * r, -t.y + oz * r); s.castShadow = true; grp.add(s);
+    }
+  }
+  return grp;
+}
+
+// A path as a ribbon that hugs the terrain: the polyline is resampled every half metre and widened sideways.
+function buildPath(p, model, mats) {
+  const samples = [];
+  for (let i = 0; i < p.points.length - 1; i++) {
+    const [x0, y0] = p.points[i], [x1, y1] = p.points[i + 1], len = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(len / 0.5));
+    for (let j = i === 0 ? 0 : 1; j <= n; j++) { const t = j / n; samples.push([x0 + (x1 - x0) * t, y0 + (y1 - y0) * t]); }
+  }
+  const pos = [], idx = [];
+  for (let i = 0; i < samples.length; i++) {
+    const s = samples[i], prev = samples[Math.max(0, i - 1)], next = samples[Math.min(samples.length - 1, i + 1)];
+    let dx = next[0] - prev[0], dy = next[1] - prev[1]; const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
+    for (const side of [-1, 1]) { const x = s[0] - dy * side * p.width / 2, y = s[1] + dx * side * p.width / 2; pos.push(x, terrainHeight(model.terrain, y) + 0.03, -y); }
+    if (i > 0) { const a = (i - 1) * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+  }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, p.material === 'stone' ? mats.stonePath : mats.gravel); m.receiveShadow = true;
+  return m;
+}
+
+function buildJetty(j, model, mats) {
+  const grp = new THREE.Group(); const base = model.terrain.low, top = base + j.height;
+  grp.add(box(j.w, 0.12, j.d, j.x + j.w / 2, top - 0.06, -(j.y + j.d / 2), mats.wood));
+  const alongY = j.d >= j.w, len = alongY ? j.d : j.w, across = alongY ? j.w : j.d, n = Math.max(1, Math.ceil(len / 2));
+  for (let i = 0; i <= n; i++) for (const side of [0.12, across - 0.12]) {
+    const t = len * i / n, px = alongY ? j.x + side : j.x + t, py = alongY ? j.y + t : j.y + side, h = top + 0.3 - (base - 0.3);
+    grp.add(box(0.14, h, 0.14, px, base - 0.3 + h / 2, -py, mats.wood));
+  }
+  return grp;
+}
+
+function buildBed(b, model, mats) {
+  const grp = new THREE.Group(); const gy = terrainHeight(model.terrain, b.y + b.d / 2);
+  grp.add(box(b.w, 0.18, b.d, b.x + b.w / 2, gy + 0.09, -(b.y + b.d / 2), mats.soil));
+  const rnd = mulberry32((Math.round(b.x * 13 + b.y * 7) | 1) >>> 0), n = Math.round(b.w * b.d * 2.2);
+  for (let i = 0; i < n; i++) {
+    const r = 0.16 + rnd() * 0.2, px = b.x + r + rnd() * Math.max(0.01, b.w - 2 * r), py = b.y + r + rnd() * Math.max(0.01, b.d - 2 * r);
+    const mat = b.plants === 'shrubs' ? (rnd() < 0.5 ? mats.leafA : mats.leafB) : (rnd() < 0.3 ? mats.flowerA : rnd() < 0.45 ? mats.flowerB : mats.plant);
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 7, 5), mat); m.position.set(px, gy + 0.18 + r * 0.7, -py); m.castShadow = true; grp.add(m);
+  }
+  return grp;
+}
+
+function buildNeighbour(nb, model, mats) {
+  const grp = new THREE.Group(); const gy = terrainHeight(model.terrain, nb.y + nb.d / 2);
+  grp.add(box(nb.w, nb.h, nb.d, nb.x + nb.w / 2, gy + nb.h / 2, -(nb.y + nb.d / 2), mats.neighbour));
+  grp.add(buildRoof({ minX: nb.x, maxX: nb.x + nb.w, minY: nb.y, maxY: nb.y + nb.d }, gy + nb.h, { type: nb.roof, pitch: nb.pitch, overhang: 0.4, ridge: nb.ridge }, { roof: mats.neighbourRoof, gable: mats.neighbour }));
+  return grp;
+}
+
+// Hedge or fence along the chosen plot sides, with a gap wherever a path crosses the line.
+function buildBoundary(plot, model, mats) {
+  const grp = new THREE.Group(); if (plot.boundary === 'none') return grp;
+  const L = { north: [[plot.x, plot.y + plot.d], [plot.x + plot.w, plot.y + plot.d]], south: [[plot.x, plot.y], [plot.x + plot.w, plot.y]], east: [[plot.x + plot.w, plot.y], [plot.x + plot.w, plot.y + plot.d]], west: [[plot.x, plot.y], [plot.x, plot.y + plot.d]] };
+  const rnd = mulberry32(5);
+  for (const side of plot.sides) {
+    const [a, b] = L[side], horiz = a[1] === b[1], len = horiz ? b[0] - a[0] : b[1] - a[1];
+    let runs = [[0, len]];
+    for (const p of model.paths) for (let i = 0; i < p.points.length - 1; i++) {
+      const [q0, q1] = [p.points[i], p.points[i + 1]], c = horiz ? a[1] : a[0], u0 = horiz ? q0[1] : q0[0], u1 = horiz ? q1[1] : q1[0];
+      if ((u0 - c) * (u1 - c) > 0 || u0 === u1) continue;
+      const t = (c - u0) / (u1 - u0), hit = (horiz ? q0[0] + (q1[0] - q0[0]) * t : q0[1] + (q1[1] - q0[1]) * t) - (horiz ? a[0] : a[1]);
+      if (hit < 0 || hit > len) continue;
+      runs = runs.flatMap(([s, e]) => { const g0 = hit - p.width / 2 - 0.6, g1 = hit + p.width / 2 + 0.6; return g1 <= s || g0 >= e ? [[s, e]] : [[s, Math.max(s, g0)], [Math.min(e, g1), e]].filter(([x, y]) => y - x > 0.3); });
+    }
+    for (const [s, e] of runs) {
+      const n = Math.max(1, Math.ceil((e - s) / 2));
+      for (let i = 0; i < n; i++) {
+        const t0 = s + (e - s) * i / n, t1 = s + (e - s) * (i + 1) / n, tm = (t0 + t1) / 2;
+        const px = horiz ? a[0] + tm : a[0], py = horiz ? a[1] : a[1] + tm, gy = terrainHeight(model.terrain, py), seg = t1 - t0;
+        if (plot.boundary === 'hedge') {
+          const h = 1.4 + rnd() * 0.3;
+          grp.add(box(horiz ? seg + 0.1 : 0.9, h, horiz ? 0.9 : seg + 0.1, px, gy + h / 2 - 0.1, -py, mats.hedge));
+        } else {
+          for (const hgt of [1.0, 0.6]) grp.add(box(horiz ? seg : 0.06, 0.08, horiz ? 0.06 : seg, px, gy + hgt, -py, mats.wood));
+          const p0x = horiz ? a[0] + t0 : a[0], p0y = horiz ? a[1] : a[1] + t0;
+          grp.add(box(0.1, 1.1, 0.1, p0x, terrainHeight(model.terrain, p0y) + 0.55, -p0y, mats.wood));
+          if (i === n - 1) grp.add(box(0.1, 1.1, 0.1, horiz ? a[0] + t1 : a[0], terrainHeight(model.terrain, horiz ? a[1] : a[1] + t1) + 0.55, -(horiz ? a[1] : a[1] + t1), mats.wood));
+        }
+      }
+    }
+  }
+  return grp;
+}
+
+// Furniture as a few boxes per item. Item frame: x along its width, plan y along its depth, back at -y; world z = -plan y.
+function buildFurniture(it, room, elev, mats) {
+  const g = new THREE.Group();
+  g.position.set(room.x + it.x, elev, -(room.y + it.y)); g.rotation.y = THREE.MathUtils.degToRad(it.rot);
+  const { w, d, h } = it, hw = w / 2, hd = d / 2;
+  const add = (bw, bh, bd, px, py, pz, mat) => g.add(box(bw, bh, bd, px, py, pz, mat)); // pz is world z: back (plan -y) is +z
+  switch (it.def.build) {
+    case 'bed':
+      add(w, 0.45, d, 0, 0.225, 0, mats.linen); add(w, 0.9, 0.08, 0, 0.45, hd - 0.04, mats.furnDark);
+      for (let i = 0; i < (w > 1.2 ? 2 : 1); i++) add(w / (w > 1.2 ? 2 : 1) - 0.2, 0.1, 0.4, -hw + 0.1 + (i + 0.5) * (w / (w > 1.2 ? 2 : 1)), 0.5, hd - 0.35, mats.white);
+      break;
+    case 'seat':
+      add(w, 0.45, d, 0, 0.225, 0, mats.fabric); add(w, 0.4, 0.25, 0, 0.65, hd - 0.125, mats.fabric);
+      if (w >= 1.4) for (const s of [-1, 1]) add(0.15, 0.2, d, s * (hw - 0.075), 0.55, 0, mats.fabric);
+      break;
+    case 'chair':
+      add(w, 0.05, d, 0, 0.45, 0, mats.furnWood); add(w, 0.4, 0.04, 0, 0.65, hd - 0.02, mats.furnWood);
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) add(0.04, 0.45, 0.04, sx * (hw - 0.03), 0.225, sz * (hd - 0.03), mats.furnDark);
+      break;
+    case 'table':
+      add(w, 0.04, d, 0, h - 0.02, 0, mats.furnWood);
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) add(0.06, h - 0.04, 0.06, sx * (hw - 0.08), (h - 0.04) / 2, sz * (hd - 0.08), mats.furnDark);
+      break;
+    case 'counter':
+      add(w, h - 0.04, d, 0, (h - 0.04) / 2, 0, mats.white); add(w, 0.04, d, 0, h - 0.02, 0, mats.counter);
+      if (it.sink) add(Math.min(0.5, w - 0.1), 0.02, Math.min(0.4, d - 0.1), 0, h + 0.01, 0, mats.steel);
+      if (it.stove) for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.01, 12), mats.furnDark); m.position.set(sx * 0.14, h + 0.005, sz * 0.14); g.add(m); }
+      break;
+    case 'toilet': add(0.38, 0.4, 0.48, 0, 0.2, -0.06, mats.white); add(w, 0.4, 0.18, 0, 0.6, hd - 0.09, mats.white); break;
+    case 'basin': add(w, h - 0.03, d, 0, (h - 0.03) / 2, 0, mats.white); add(w, 0.03, d, 0, h - 0.015, 0, mats.counter); break;
+    case 'tub': add(w, h, d, 0, h / 2, 0, mats.white); add(w - 0.16, 0.02, d - 0.16, 0, h - 0.06, 0, mats.glass); break;
+    case 'shower':
+      add(w, 0.06, d, 0, 0.03, 0, mats.white);
+      add(0.02, 2.0, d, hw - 0.01, 1.0, 0, mats.glass); add(w, 2.0, 0.02, 0, 1.0, -hd + 0.01, mats.glass);
+      break;
+    case 'sauna': {
+      const two = it.tiers === 2, td = two ? hd : d;
+      add(w, 0.05, td, 0, 0.45, two ? -hd / 2 : 0, mats.furnWood); add(w, 0.42, 0.04, 0, 0.21, two ? -0.02 - hd : -hd + 0.02, mats.furnWood);
+      if (two) { add(w, 0.05, hd, 0, 0.85, hd / 2, mats.furnWood); add(w, 0.4, 0.04, 0, 0.65, 0, mats.furnWood); }
+      break;
+    }
+    default: add(w, h, d, 0, h / 2, 0, mats[it.def.mat] || mats.furnWood);
+  }
+  return g;
+}
+
+function buildTerrain(terrain, mats) {
+  const geo = new THREE.PlaneGeometry(600, 600, 2, 300);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) pos.setZ(i, terrainHeight(terrain, pos.getY(i)));
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, mats.grass); m.rotation.x = -Math.PI / 2; m.receiveShadow = true;
+  return m;
+}
+
+// A softly irregular outline, so the lake reads as water rather than a swimming pool.
+function lakeOutline(w, d, n = 72) {
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const t = (i / n) * Math.PI * 2;
+    const r = 1 + 0.07 * Math.sin(3 * t + 0.6) + 0.05 * Math.sin(5 * t + 2.3) + 0.025 * Math.sin(8 * t + 1.1);
+    pts.push(new THREE.Vector2(Math.cos(t) * (w / 2) * r, Math.sin(t) * (d / 2) * r));
+  }
+  return pts;
+}
+function buildLake(lake, baseY, mats) {
+  const grp = new THREE.Group(); grp.name = 'lake';
+  const cx = lake.x + lake.w / 2, cy = lake.y + lake.d / 2;
+  const water = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(lakeOutline(lake.w, lake.d))), mats.water);
+  const shore = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(lakeOutline(lake.w * 1.09, lake.d * 1.11))), mats.shore);
+  for (const [m, y] of [[shore, 0.007], [water, 0.014]]) {
+    m.rotation.set(-Math.PI / 2, 0, THREE.MathUtils.degToRad(lake.rotate), 'XYZ');
+    m.position.set(cx, baseY + y, -cy); m.receiveShadow = true; grp.add(m);
+  }
+  return grp;
+}
+
+function buildDeck(dk, f, model, mats) {
+  const grp = new THREE.Group();
+  const stone = dk.material === 'stone', thick = stone ? 0.1 : 0.15, top = f.elevation + 0.02;
+  grp.add(box(dk.w, thick, dk.d, dk.x + dk.w / 2, top - thick / 2, -(dk.y + dk.d / 2), stone ? mats.stone : mats.wood));
+  if (!stone) {
+    const pts = [], inset = 0.15, step = 3;
+    const xs = [dk.x + inset], ys = [dk.y + inset];
+    for (let x = dk.x + inset + step; x < dk.x + dk.w - inset - 0.5; x += step) xs.push(x);
+    xs.push(dk.x + dk.w - inset);
+    for (let y = dk.y + inset + step; y < dk.y + dk.d - inset - 0.5; y += step) ys.push(y);
+    ys.push(dk.y + dk.d - inset);
+    for (const x of xs) { pts.push([x, ys[0]]); pts.push([x, ys[ys.length - 1]]); }
+    for (const y of ys.slice(1, -1)) { pts.push([xs[0], y]); pts.push([xs[xs.length - 1], y]); }
+    for (const [px, py] of pts) {
+      const gy = terrainHeight(model.terrain, py), h = top - thick - gy;
+      if (h < 0.25) continue;
+      grp.add(box(0.15, h, 0.15, px, gy + h / 2, -py, mats.wood));
+    }
+  }
+  if (wantsRailing(dk, f, model.terrain)) {
+    for (const run of deckFreeRuns(dk, f)) {
+      const dx = run.b[0] - run.a[0], dy = run.b[1] - run.a[1], len = Math.hypot(dx, dy), alongX = Math.abs(dx) > Math.abs(dy);
+      const cx = (run.a[0] + run.b[0]) / 2, cy = (run.a[1] + run.b[1]) / 2;
+      for (const hgt of [1.0, 0.55]) grp.add(box(alongX ? len : 0.07, 0.05, alongX ? 0.07 : len, cx, top + hgt, -cy, mats.wood));
+      const n = Math.max(1, Math.ceil(len / 1.5));
+      for (let i = 0; i <= n; i++) {
+        const t = i / n, px = run.a[0] + dx * t, py = run.a[1] + dy * t;
+        grp.add(box(0.09, 1.0, 0.09, px, top + 0.5, -py, mats.wood));
+      }
+    }
+  }
+  const lab = makeLabel(dk.name, fmt1(dk.area) + ' m²'); placeLabel(lab, dk.x, dk.y, dk.w, dk.d, top + 0.015); grp.add(lab);
+  return grp;
+}
+
+function buildStairs(st, f, total, mats) {
+  const grp = new THREE.Group();
+  // Each tread is a block one riser plus a little deep, so the stair is open underneath (a stair stacked above another leaves headroom).
+  const rise = total / st.steps, depth = rise + 0.18;
+  for (const s of stairSteps(st, rise).steps) { const h = Math.min(s.top, depth); grp.add(box(s.w, h, s.d, s.x + s.w / 2, f.elevation + s.top - h / 2, -(s.y + s.d / 2), mats.stair)); }
+  return grp;
+}
+
+function buildRoof(bb, baseY, rs, mats) {
+  const grp = new THREE.Group(); grp.name = 'roof';
+  const type = rs.type || 'gable';
+  const over = rs.overhang ?? 0.5, thick = rs.thickness ?? 0.22;
+  const cw = bb.maxX - bb.minX, cd = bb.maxY - bb.minY, cx = (bb.minX + bb.maxX) / 2, cy = (bb.minY + bb.maxY) / 2;
+  // Roof slabs are boxes (faces +x, -x, +y, -y, +z, -z): the top gets the roof covering, the soffit, fascia and barge boards the trim colour.
+  const R = mats.roof, T = mats.trim, slabMats = [T, T, R, T, T, T];
+  if (type === 'flat') {
+    grp.add(metreUVs(box(cw + 2 * over, thick, cd + 2 * over, cx, baseY + thick / 2, -cy, slabMats)));
+    return grp;
+  }
+  const pitch = THREE.MathUtils.degToRad(rs.pitch ?? 30), tan = Math.tan(pitch);
+  const ridge = rs.ridge && rs.ridge !== 'auto' ? rs.ridge : (cw >= cd ? 'x' : 'y');
+  const span = (ridge === 'x' ? cd : cw) + 2 * over;
+  const length = (ridge === 'x' ? cw : cd) + 2 * over;
+  // The underside meets the wall top at the outer wall face, so the eaves hang "drop" below it, as on a real house.
+  const drop = over * tan, rise = (span / 2) * tan;
+  // Each plane runs from the eave to just past the ridge, so the two top faces meet in a clean apex.
+  const len = (span / 2) / Math.cos(pitch) + thick * tan;
+  const roof = new THREE.Group();
+  for (const side of [-1, 1]) {
+    const geo = new THREE.BoxGeometry(len, thick, length);
+    // u along the ridge, v up the slope from the eave, in metres, so tile courses run parallel to the eaves.
+    const pos = geo.attributes.position, uv = geo.attributes.uv;
+    for (let i = 0; i < pos.count; i++) uv.setXY(i, pos.getZ(i), side < 0 ? pos.getX(i) + len / 2 : len / 2 - pos.getX(i));
+    const m = new THREE.Mesh(geo, slabMats);
+    const d = [-side * Math.cos(pitch), Math.sin(pitch)], n = [side * Math.sin(pitch), Math.cos(pitch)];
+    m.position.set(side * span / 2 + d[0] * len / 2 + n[0] * thick / 2, -drop + d[1] * len / 2 + n[1] * thick / 2, length / 2);
+    m.rotation.z = -side * pitch; m.castShadow = true; m.receiveShadow = true;
+    roof.add(m);
+  }
+  const apex = rise - drop + thick / Math.cos(pitch);
+  roof.add(metreUVs(box(0.24, 0.08, length, 0, apex - 0.02, length / 2, R)));
+  const gw = span / 2 - over, gh = gw * tan;
+  const gable = new THREE.Shape(); gable.moveTo(-gw, 0); gable.lineTo(0, gh); gable.lineTo(gw, 0); gable.closePath();
+  // Gable UVs offset to world metres so the cladding lines up with the wall below.
+  const du = ridge === 'x' ? -cy : cx;
+  for (const z of [over, length - over]) {
+    const geo = new THREE.ShapeGeometry(gable), uv = geo.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) + du, uv.getY(i) + baseY);
+    const gm = new THREE.Mesh(geo, mats.gable); gm.position.z = z; gm.castShadow = true; roof.add(gm);
+  }
+  if (ridge === 'x') { roof.rotation.y = -Math.PI / 2; roof.position.set(bb.maxX + over, baseY, -cy); }
+  else { roof.position.set(cx, baseY, -(bb.maxY + over)); }
+  grp.add(roof);
+  return grp;
+}
+
+// The outside of one storey: casings round windows and doors, window sills, corner boards and a rendered plinth band along the ground.
+function buildExteriorTrim(f, next, model, mats, ex) {
+  const grp = new THREE.Group(), e = f.elevation, top = e + f.H, boards = ex.facade.material.startsWith('board');
+  const cw = 0.09, cd = 0.025;
+  for (const s of f.segments) {
+    if (s.kind !== 'ext') continue;
+    for (const op of s.openings) {
+      if (op.type === 'opening') continue;
+      const y1 = e + op.top;
+      if (op.type === 'window') grp.add(faceBox(s, op.lo - 0.04, op.hi + 0.04, e + op.sill - 0.05, e + op.sill, 0.06, mats.trim));
+      if (!boards) continue;
+      const y0 = op.type === 'window' ? e + op.sill : e;
+      grp.add(faceBox(s, op.lo - cw, op.lo, y0, y1, cd, mats.trim));
+      grp.add(faceBox(s, op.hi, op.hi + cw, y0, y1, cd, mats.trim));
+      if (y1 < top - 0.03) grp.add(faceBox(s, op.lo - cw - 0.02, op.hi + cw + 0.02, y1, Math.min(y1 + cw + 0.02, top), cd + 0.01, mats.trim));
+    }
+  }
+  // Corner boards at outside corners, which is where an exterior wall was stretched by its thickness to close the corner.
+  if (boards) {
+    const seen = new Set(), bw = 0.12, pr = 0.025;
+    for (const s of f.segments) {
+      if (s.kind !== 'ext') continue;
+      for (const [end, dir, orig] of [[s.a0, -1, s.a], [s.b0, 1, s.b]]) {
+        if (Math.abs(end - orig) < EPS) continue;
+        const perp = s.cEdge + s.out * s.t, px = s.axis === 'x' ? end : perp, py = s.axis === 'x' ? perp : end;
+        const key = `${Math.round(px * 100)},${Math.round(py * 100)}`;
+        if (seen.has(key)) continue; seen.add(key);
+        const al = [end - dir * bw, end + dir * pr].sort((p, q) => p - q), ac = [perp - s.out * bw, perp + s.out * pr].sort((p, q) => p - q);
+        const [xs, ys] = s.axis === 'x' ? [al, ac] : [ac, al];
+        const nb = next && next.bbox, through = nb && px > nb.minX - 0.01 && px < nb.maxX + 0.01 && py > nb.minY - 0.01 && py < nb.maxY + 0.01;
+        const y1 = top + (through ? model.slab : 0);
+        grp.add(box(xs[1] - xs[0], y1 - e, ys[1] - ys[0], (xs[0] + xs[1]) / 2, (e + y1) / 2, -(ys[0] + ys[1]) / 2, mats.trim));
+      }
+    }
+  }
+  // Plinth band: render from the floor up to a little above the ground, following the slope along east and west walls.
+  if (ex.plinth && !ex.plinth.floors.includes(f.level)) {
+    const t = model.terrain, h = ex.plinth.height, pos = [], uv = [];
+    for (const s of f.segments) {
+      if (s.kind !== 'ext') continue;
+      const off = s.c + s.out * (s.t / 2 + 0.008);
+      for (const p of s.pieces) {
+        if (p.y0 > EPS) continue;
+        const us = [p.a, p.b];
+        if (s.axis === 'y') {
+          for (let u = Math.ceil(p.a * 2) / 2; u < p.b; u += 0.5) us.push(u);
+          for (const b of [t.lowY, t.highY]) if (b > p.a && b < p.b) us.push(b);
+        }
+        us.sort((a, b) => a - b);
+        const vs = us.map(u => Math.min(Math.max(terrainHeight(t, s.axis === 'x' ? s.cEdge : u) + h - e, 0), p.y1));
+        if (Math.max(...vs) < 0.01) continue;
+        for (let i = 0; i < us.length - 1; i++) {
+          for (const [u, v] of [[us[i], 0], [us[i + 1], 0], [us[i + 1], vs[i + 1]], [us[i], 0], [us[i + 1], vs[i + 1]], [us[i], vs[i]]]) {
+            if (s.axis === 'x') { pos.push(u, e + v, -off); uv.push(u, e + v); } else { pos.push(off, e + v, -u); uv.push(-u, e + v); }
+          }
+        }
+      }
+    }
+    if (pos.length) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.computeVertexNormals();
+      const m = new THREE.Mesh(geo, mats.plinth); m.receiveShadow = true; grp.add(m);
+    }
+  }
+  return grp;
+}
+
+function buildScene(model) {
+  const g = new THREE.Group(); g.name = 'house';
+  const ex = model.norm.exterior, tex = {};
+  const mats = {
+    ext: surfaceMaterial(ex.facade, tex),
+    int: new THREE.MeshStandardMaterial({ color: 0xf6f3ee, roughness: 0.95 }),
+    frame: new THREE.MeshStandardMaterial({ color: new THREE.Color(ex.trim), roughness: 0.6 }),
+    trim: new THREE.MeshStandardMaterial({ color: new THREE.Color(ex.trim), roughness: 0.7 }),
+    ...(ex.plinth ? { plinth: surfaceMaterial(ex.plinth, tex, { side: THREE.DoubleSide }) } : {}),
+    glass: new THREE.MeshStandardMaterial({ color: 0x9fcbe6, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.35, side: THREE.DoubleSide }),
+    door: new THREE.MeshStandardMaterial({ color: 0x7a5236, roughness: 0.7 }),
+    roof: surfaceMaterial(ex.roof, tex),
+    gable: surfaceMaterial(ex.facade, tex, { side: THREE.DoubleSide }),
+    ceiling: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, side: THREE.DoubleSide }),
+    water: new THREE.MeshStandardMaterial({ color: 0x3b7ca3, roughness: 0.15, metalness: 0.3 }),
+    shore: new THREE.MeshStandardMaterial({ color: 0xcdbf94, roughness: 1 }),
+    wood: new THREE.MeshStandardMaterial({ color: 0xb08968, roughness: 0.85 }),
+    stone: new THREE.MeshStandardMaterial({ color: 0xb9b3a6, roughness: 1 }),
+    stair: new THREE.MeshStandardMaterial({ color: 0xa98a66, roughness: 0.8 }),
+    grass: new THREE.MeshStandardMaterial({ color: 0xf3f3ea, roughness: 1, map: grassTexture() }),
+    trunk: new THREE.MeshStandardMaterial({ color: 0x6b4f3a, roughness: 0.95 }),
+    birch: new THREE.MeshStandardMaterial({ color: 0xe6e2d8, roughness: 0.9 }),
+    leafA: new THREE.MeshStandardMaterial({ color: 0x4f7a3a, roughness: 0.9 }),
+    leafB: new THREE.MeshStandardMaterial({ color: 0x61904a, roughness: 0.9 }),
+    birchLeaf: new THREE.MeshStandardMaterial({ color: 0x8fb35a, roughness: 0.9 }),
+    pine: new THREE.MeshStandardMaterial({ color: 0x3e6a3b, roughness: 0.95 }),
+    gravel: new THREE.MeshStandardMaterial({ color: 0xbab2a2, roughness: 1, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+    stonePath: new THREE.MeshStandardMaterial({ color: 0xa9a59d, roughness: 1, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+    soil: new THREE.MeshStandardMaterial({ color: 0x4b3b2d, roughness: 1 }),
+    hedge: new THREE.MeshStandardMaterial({ color: 0x4a7538, roughness: 0.95 }),
+    plant: new THREE.MeshStandardMaterial({ color: 0x5a8a45, roughness: 0.9 }),
+    flowerA: new THREE.MeshStandardMaterial({ color: 0xd4678b, roughness: 0.8 }),
+    flowerB: new THREE.MeshStandardMaterial({ color: 0xe8c75c, roughness: 0.8 }),
+    neighbour: new THREE.MeshStandardMaterial({ color: 0xd9d2c6, roughness: 0.95 }),
+    neighbourRoof: new THREE.MeshStandardMaterial({ color: 0x6e6a66, roughness: 0.95 }),
+  };
+  Object.assign(mats, {
+    fabric: new THREE.MeshStandardMaterial({ color: 0x7d8f9a, roughness: 0.95 }),
+    linen: new THREE.MeshStandardMaterial({ color: 0xe8e2d4, roughness: 0.95 }),
+    white: new THREE.MeshStandardMaterial({ color: 0xf4f4f2, roughness: 0.5 }),
+    counter: new THREE.MeshStandardMaterial({ color: 0x8a8f94, roughness: 0.4 }),
+    steel: new THREE.MeshStandardMaterial({ color: 0xb8bcc0, roughness: 0.3, metalness: 0.6 }),
+    appliance: new THREE.MeshStandardMaterial({ color: 0xdedede, roughness: 0.45 }),
+    furnWood: new THREE.MeshStandardMaterial({ color: 0xb8926a, roughness: 0.8 }),
+    furnDark: new THREE.MeshStandardMaterial({ color: 0x5e4634, roughness: 0.85 }),
+  });
+  const ud = g.userData; ud.mats = mats; ud.floorGroups = []; ud.ceilings = []; ud.furniture = [];
+  const terr = model.terrain;
+  ud.terrain = buildTerrain(terr, mats); g.add(ud.terrain);
+  const lowest = Math.min(...model.floors.map(f => f.elevation));
+  ud.base = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), mats.grass);
+  ud.base.rotation.x = -Math.PI / 2; ud.base.position.y = Math.min(lowest, terr.low) - 0.05; ud.base.receiveShadow = true; ud.base.visible = false; g.add(ud.base);
+  if (model.lake) g.add(buildLake(model.lake, terr.low, mats));
+  for (const p of model.paths) g.add(buildPath(p, model, mats));
+  if (model.plot) g.add(buildBoundary(model.plot, model, mats));
+  for (const b of model.beds) g.add(buildBed(b, model, mats));
+  for (const nb of model.neighbours) g.add(buildNeighbour(nb, model, mats));
+  if (model.jetty) g.add(buildJetty(model.jetty, model, mats));
+  for (const t of model.trees) g.add(buildTree(t, model, mats));
+  const bw = 0.05;
+
+  model.floors.forEach((f, i) => {
+    const fg = new THREE.Group(); fg.name = 'floor-' + i;
+    const e = f.elevation;
+    const outer = ex.plinth && ex.plinth.floors.includes(f.level) ? mats.plinth : mats.ext;
+    for (const s of f.segments) for (const p of s.pieces) {
+      if (s.kind === 'ext') fg.add(metreUVs(wallBox(s, p.a, p.b, e + p.y0, e + p.y1, s.t, extWallMats(s, outer, mats.int))));
+      else fg.add(wallBox(s, p.a, p.b, e + p.y0, e + p.y1, s.t, mats.int));
+    }
+    fg.add(buildExteriorTrim(f, model.floors[i + 1], model, mats, ex));
+    for (const op of f.openings) {
+      const s = op.segment; if (!s) continue;
+      const depth = s.t + 0.02;
+      if (op.type === 'window') {
+        const pane = wallBox(s, op.lo, op.hi, e + op.sill, e + op.top, 0.02, mats.glass); pane.castShadow = false; fg.add(pane);
+        fg.add(wallBox(s, op.lo, op.hi, e + op.top - bw, e + op.top, depth, mats.frame));
+        fg.add(wallBox(s, op.lo, op.hi, e + op.sill, e + op.sill + bw, depth, mats.frame));
+        fg.add(wallBox(s, op.lo, op.lo + bw, e + op.sill, e + op.top, depth, mats.frame));
+        fg.add(wallBox(s, op.hi - bw, op.hi, e + op.sill, e + op.top, depth, mats.frame));
+      } else if (op.type === 'door') {
+        fg.add(wallBox(s, op.lo, op.hi, e + op.top - bw, e + op.top, depth, mats.frame));
+        fg.add(wallBox(s, op.lo, op.lo + bw, e, e + op.top, depth, mats.frame));
+        fg.add(wallBox(s, op.hi - bw, op.hi, e, e + op.top, depth, mats.frame));
+        // Door leaf, hinged at the low end, standing 75 degrees open into its room.
+        const w = op.hi - op.lo - 2 * bw, h = op.top - bw;
+        const hinge = new THREE.Group();
+        const hx = s.axis === 'x' ? op.lo + bw : s.c, hy = s.axis === 'x' ? s.c : op.lo + bw;
+        hinge.position.set(hx, e, -hy);
+        const u = s.axis === 'x' ? [1, 0] : [0, 1];
+        const v = s.axis === 'x' ? [0, -op.out] : [-op.out, 0];
+        const th = THREE.MathUtils.degToRad(75);
+        const dx = u[0] * Math.cos(th) + v[0] * Math.sin(th), dy = u[1] * Math.cos(th) + v[1] * Math.sin(th);
+        hinge.rotation.y = Math.atan2(dy, dx);
+        const leaf = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.04), mats.door);
+        leaf.position.set(w / 2, h / 2, 0); leaf.castShadow = true;
+        hinge.add(leaf); fg.add(hinge);
+      }
+    }
+    // Floor slab under every storey except the lowest, with the stairwell of the storey below cut out.
+    const holesBelow = stairHoles(model.floors[i - 1]);
+    if (i > 0) {
+      const bb = f.bbox;
+      for (const p of cutRect({ x: bb.minX, y: bb.minY, w: bb.maxX - bb.minX, d: bb.maxY - bb.minY }, holesBelow))
+        fg.add(metreUVs(box(p.w, model.slab, p.d, p.x + p.w / 2, e - model.slab / 2, -(p.y + p.d / 2), [mats.ext, mats.ext, mats.int, mats.int, mats.ext, mats.ext])));
+    }
+    for (const r of f.rooms) {
+      const fmat = new THREE.MeshStandardMaterial({ color: new THREE.Color(floorColor(r.floor)), roughness: 0.85 });
+      for (const p of cutRect({ x: r.x, y: r.y, w: r.w, d: r.d }, holesBelow)) {
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(p.w, p.d), fmat);
+        floor.rotation.x = -Math.PI / 2; floor.position.set(p.x + p.w / 2, e + 0.02, -(p.y + p.d / 2)); floor.receiveShadow = true; fg.add(floor);
+      }
+      const lab = makeLabel(r.name, fmt1(r.area) + ' m²'); placeLabel(lab, r.x, r.y, r.w, r.d, e + 0.035); fg.add(lab);
+    }
+    const furn = new THREE.Group(); furn.name = 'furniture-' + i;
+    for (const r of f.rooms) for (const it of r.furniture) furn.add(buildFurniture(it, r, e, mats));
+    fg.add(furn); ud.furniture.push(furn);
+    for (const dk of f.decks) fg.add(buildDeck(dk, f, model, mats));
+    const next = model.floors[i + 1];
+    for (const st of f.stairs) fg.add(buildStairs(st, f, next ? next.elevation - e : f.H, mats));
+    g.add(fg); ud.floorGroups.push(fg);
+
+    // Ceiling, with this storey's own stairwell left open.
+    const bb = f.bbox, cg = new THREE.Group();
+    for (const p of cutRect({ x: bb.minX, y: bb.minY, w: bb.maxX - bb.minX, d: bb.maxY - bb.minY }, stairHoles(f))) {
+      const ceil = new THREE.Mesh(new THREE.PlaneGeometry(p.w, p.d), mats.ceiling);
+      ceil.rotation.x = Math.PI / 2; ceil.position.set(p.x + p.w / 2, e + f.H - 0.01, -(p.y + p.d / 2)); cg.add(ceil);
+    }
+    g.add(cg); ud.ceilings.push(cg);
+  });
+
+  const top = model.floors[model.topIndex];
+  ud.roof = buildRoof(top.bbox, top.elevation + top.H, model.norm.roof, mats); g.add(ud.roof);
+  return g;
+}
+
+function disposeGroup(g) {
+  const shared = new Set(Object.values(g.userData.mats || {}));
+  g.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    for (const m of Array.isArray(o.material) ? o.material : o.material ? [o.material] : []) if (!shared.has(m)) { if (m.map) m.map.dispose(); m.dispose(); }
+  });
+  shared.forEach(m => { if (m.map) m.map.dispose(); if (m.bumpMap) m.bumpMap.dispose(); m.dispose(); });
+}
+
+
+// ---------- 2D plan ----------
+function furnitureSVG(it, r, Y) {
+  const { w, d } = it, hw = w / 2, hd = d / 2, b = it.def.build, parts = [];
+  const rect = (x, y, ww, dd, cls = '', rx = 0) => `<rect class="${cls}" x="${x}" y="${y}" width="${ww}" height="${dd}"${rx ? ` rx="${rx}"` : ''}/>`;
+  parts.push(rect(-hw, -hd, w, d, 'body'));
+  if (b === 'bed') { const n = w > 1.2 ? 2 : 1, pw = (w - 0.24) / n - 0.08; for (let i = 0; i < n; i++) parts.push(rect(-hw + 0.12 + i * (w - 0.24) / n + 0.04, hd - 0.6, pw, 0.4, 'glyph', 0.05)); parts.push(`<line class="glyph" x1="${-hw + 0.05}" y1="${hd - 0.75}" x2="${hw - 0.05}" y2="${hd - 0.75}"/>`); }
+  else if (b === 'seat') { parts.push(rect(-hw, hd - 0.25, w, 0.25, 'glyph')); if (w >= 1.4) { parts.push(rect(-hw, -hd, 0.15, d, 'glyph')); parts.push(rect(hw - 0.15, -hd, 0.15, d, 'glyph')); } }
+  else if (b === 'chair') parts.push(`<line class="glyph" x1="${-hw}" y1="${hd - 0.06}" x2="${hw}" y2="${hd - 0.06}"/>`);
+  else if (b === 'counter') { if (it.sink) parts.push('<circle class="glyph" r="0.18"/>'); if (it.stove) for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) parts.push(`<circle class="glyph" cx="${sx * 0.14}" cy="${sy * 0.14}" r="0.07"/>`); }
+  else if (b === 'toilet') parts.push(rect(-hw, hd - 0.18, w, 0.18, 'glyph'), '<ellipse class="glyph" cy="-0.08" rx="0.17" ry="0.2"/>');
+  else if (b === 'basin') parts.push(`<ellipse class="glyph" rx="${Math.max(0.1, hw - 0.08)}" ry="${Math.max(0.08, hd - 0.08)}"/>`);
+  else if (b === 'tub') parts.push(rect(-hw + 0.08, -hd + 0.08, w - 0.16, d - 0.16, 'glyph', 0.15));
+  else if (b === 'shower') parts.push(`<line class="glyph" x1="${-hw}" y1="${-hd}" x2="${hw}" y2="${hd}"/><line class="glyph" x1="${-hw}" y1="${hd}" x2="${hw}" y2="${-hd}"/><circle class="glyph" r="0.05"/>`);
+  else if (b === 'sauna' && it.tiers === 2) parts.push(`<line class="glyph" x1="${-hw}" y1="0" x2="${hw}" y2="0"/>`);
+  else if (it.def.glyph === 'doors') parts.push(`<line class="glyph" x1="0" y1="${-hd}" x2="0" y2="${hd}"/>`);
+  else if (it.def.glyph === 'hatch') parts.push(`<line class="glyph" x1="${-hw}" y1="${-hd}" x2="${hw}" y2="${hd}"/>`);
+  if (it.label) parts.push(`<text text-anchor="middle" y="0.07">${esc(it.label)}</text>`);
+  return `<g class="furn" transform="translate(${r.x + it.x} ${Y(r.y + it.y)}) rotate(${-it.rot})">${parts.join('')}</g>`;
+}
+
+function planSVG(model, fi, opts = {}) {
+  const f = model.floors[fi];
+  const { bbox, rooms, segments, openings, decks, stairs } = f;
+  const Y = y => -y;
+  const ext = unionBox([bbox, ...decks.map(d => ({ minX: d.x, maxX: d.x + d.w, minY: d.y, maxY: d.y + d.d }))]);
+  const pad = 1.5;
+  const x0 = ext.minX - pad, x1 = ext.maxX + pad, top = Y(ext.maxY) - pad - 0.6, bottom = Y(ext.minY) + pad;
+  const multi = model.floors.length > 1;
+  const out = [];
+  out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x0} ${top} ${x1 - x0} ${bottom - top}" class="plan-svg" role="img" aria-label="Floor plan: ${esc(f.name)}">`);
+  out.push('<defs><pattern id="deckfill" width="0.3" height="0.3" patternUnits="userSpaceOnUse"><line class="deck-line" x1="0.15" y1="0" x2="0.15" y2="0.3"/></pattern></defs>');
+  out.push(`<text class="ptitle" x="${x0 + 0.3}" y="${top + 0.7}">${esc(f.name)}${multi ? ' · level ' + f.level : ''} · ${fmt1(f.totalArea)} m²</text>`);
+  for (const d of decks) if (wantsRailing(d, f, model.terrain)) for (const run of deckFreeRuns(d, f)) out.push(`<line class="rail" x1="${run.a[0]}" y1="${Y(run.a[1])}" x2="${run.b[0]}" y2="${Y(run.b[1])}"/>`);
+  for (const d of decks) out.push(`<rect class="deck" x="${d.x}" y="${Y(d.y + d.d)}" width="${d.w}" height="${d.d}"/><text class="dname" x="${d.x + d.w / 2}" y="${Y(d.y + d.d / 2) + 0.14}" text-anchor="middle"${d.d > 1.5 * d.w ? ` transform="rotate(-90 ${d.x + d.w / 2} ${Y(d.y + d.d / 2) + 0.14})"` : ''}>${esc(d.name)}</text>`);
+  for (const r of rooms) out.push(`<rect class="room" x="${r.x}" y="${Y(r.y2)}" width="${r.w}" height="${r.d}" fill="${floorColor(r.floor)}"/>`);
+  for (const s of segments) for (const p of s.pieces) {
+    if (!p.solid) continue;
+    if (s.axis === 'x') out.push(`<rect class="wall" x="${p.a}" y="${Y(s.c + s.t / 2)}" width="${p.b - p.a}" height="${s.t}"/>`);
+    else out.push(`<rect class="wall" x="${s.c - s.t / 2}" y="${Y(p.b)}" width="${s.t}" height="${p.b - p.a}"/>`);
+  }
+  for (const op of openings) {
+    const s = op.segment; if (!s) continue;
+    const t = s.t, w = op.hi - op.lo;
+    if (op.type === 'window') {
+      if (s.axis === 'x') out.push(`<rect class="win" x="${op.lo}" y="${Y(s.c + t / 2)}" width="${w}" height="${t}"/><line class="glass" x1="${op.lo}" y1="${Y(s.c)}" x2="${op.hi}" y2="${Y(s.c)}"/>`);
+      else out.push(`<rect class="win" x="${s.c - t / 2}" y="${Y(op.hi)}" width="${t}" height="${w}"/><line class="glass" x1="${s.c}" y1="${Y(op.lo)}" x2="${s.c}" y2="${Y(op.hi)}"/>`);
+    } else if (op.type === 'door') {
+      const hx = s.axis === 'x' ? op.lo : s.c, hy = s.axis === 'x' ? s.c : op.lo;
+      const u = s.axis === 'x' ? [1, 0] : [0, 1], v = s.axis === 'x' ? [0, -op.out] : [-op.out, 0];
+      const tip = [hx + v[0] * w, hy + v[1] * w], end = [hx + u[0] * w, hy + u[1] * w];
+      const sweep = (u[0] * v[1] - u[1] * v[0]) > 0 ? 1 : 0;
+      out.push(`<line class="leaf" x1="${hx}" y1="${Y(hy)}" x2="${tip[0]}" y2="${Y(tip[1])}"/><path class="swing" d="M ${tip[0]} ${Y(tip[1])} A ${w} ${w} 0 0 ${sweep} ${end[0]} ${Y(end[1])}"/>`);
+    } else {
+      if (s.axis === 'x') out.push(`<line class="open" x1="${op.lo}" y1="${Y(s.c)}" x2="${op.hi}" y2="${Y(s.c)}"/>`);
+      else out.push(`<line class="open" x1="${s.c}" y1="${Y(op.lo)}" x2="${s.c}" y2="${Y(op.hi)}"/>`);
+    }
+  }
+  const below = model.floors[fi - 1];
+  if (below) for (const st of below.stairs) {
+    for (const s of stairSteps(st, 1).steps) out.push(`<rect class="step down" x="${s.x}" y="${Y(s.y + s.d)}" width="${s.w}" height="${s.d}"/>`);
+    out.push(`<rect class="void" x="${st.x}" y="${Y(st.y + st.d)}" width="${st.w}" height="${st.d}"/>`);
+  }
+  for (const st of stairs) {
+    const { steps, arrow } = stairSteps(st, 1);
+    for (const s of steps) out.push(`<rect class="step" x="${s.x}" y="${Y(s.y + s.d)}" width="${s.w}" height="${s.d}"/>`);
+    const [a, b] = arrow;
+    const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
+    const hx = b[0] - ux * 0.25, hy = b[1] - uy * 0.25, px = -uy * 0.12, py = ux * 0.12;
+    out.push(`<path class="stair-arrow" d="M ${a[0]} ${Y(a[1])} L ${b[0]} ${Y(b[1])} M ${hx + px} ${Y(hy + py)} L ${b[0]} ${Y(b[1])} L ${hx - px} ${Y(hy - py)}"/>`);
+  }
+  if (opts.furniture !== false) for (const r of rooms) for (const it of r.furniture) out.push(furnitureSVG(it, r, Y));
+  for (const r of rooms) {
+    const cx = r.x + r.w / 2, cy = r.y + r.d / 2;
+    const fsz = Math.max(0.22, Math.min(0.44, (r.w - 0.2) / (r.name.length * 0.45)));
+    out.push(`<text class="rname" style="font-size:${fsz.toFixed(2)}px" x="${cx}" y="${Y(cy) - 0.06}" text-anchor="middle">${esc(r.name)}</text><text class="rarea" x="${cx}" y="${Y(cy) + 0.38}" text-anchor="middle">${fmt1(r.area)} m²</text>`);
+  }
+  // Overall dimensions of this storey, outside face to outside face.
+  const dy = Y(ext.maxY) - 0.75, dx = ext.minX - 0.75;
+  out.push(`<g class="dim"><line x1="${bbox.minX}" y1="${dy}" x2="${bbox.maxX}" y2="${dy}"/><line x1="${bbox.minX}" y1="${dy - 0.18}" x2="${bbox.minX}" y2="${dy + 0.18}"/><line x1="${bbox.maxX}" y1="${dy - 0.18}" x2="${bbox.maxX}" y2="${dy + 0.18}"/><text x="${(bbox.minX + bbox.maxX) / 2}" y="${dy - 0.14}" text-anchor="middle">${fmt(bbox.maxX - bbox.minX)} m</text></g>`);
+  const ya = Y(bbox.maxY), yb = Y(bbox.minY);
+  out.push(`<g class="dim"><line x1="${dx}" y1="${ya}" x2="${dx}" y2="${yb}"/><line x1="${dx - 0.18}" y1="${ya}" x2="${dx + 0.18}" y2="${ya}"/><line x1="${dx - 0.18}" y1="${yb}" x2="${dx + 0.18}" y2="${yb}"/><text x="${dx - 0.14}" y="${(ya + yb) / 2}" text-anchor="middle" transform="rotate(-90 ${dx - 0.14} ${(ya + yb) / 2})">${fmt(bbox.maxY - bbox.minY)} m</text></g>`);
+  const nx = x1 - 0.75, ny = top + 1.4;
+  out.push(`<g class="north"><circle cx="${nx}" cy="${ny}" r="0.42"/><path d="M ${nx} ${ny - 0.32} L ${nx + 0.17} ${ny + 0.2} L ${nx} ${ny + 0.08} L ${nx - 0.17} ${ny + 0.2} Z"/><text x="${nx}" y="${ny + 0.8}" text-anchor="middle">N</text></g>`);
+  out.push('</svg>');
+  return out.join('');
+}
+
+
+// ---------- page state and renderer ----------
+const $ = id => document.getElementById(id);
+const el = {
+  app: document.querySelector('.app'), viewport: $('viewport'), canvas: $('gl'), planWrap: $('plan-wrap'), walkHelp: $('walk-help'), dpad: $('dpad'), status: $('status'),
+  name: $('house-name'), desc: $('house-desc'), statArea: $('stat-area'), statFoot: $('stat-footprint'), statRooms: $('stat-rooms'),
+  rooms: $('rooms-body'), roomsFoot: $('rooms-foot'), editor: $('spec-text'), msg: $('spec-msg'), floorSeg: $('floor-seg'),
+};
+const state = { spec: null, model: null, view: '3d', cam: 'orbit', roof: true, floor: null, furniture: true };
+const isTouch = matchMedia('(pointer: coarse)').matches;
+const walker = { yaw: 0, pitch: 0, eyeY: 1.6 };
+const keys = new Set();
+let tour = null, tourCache = null; // the loaded guided tour and the last computed route, see the tour section
+
+let renderer = null, scene, camera, controls, sun, hemi, ambient, house = null;
+let needsRender = true;
+const invalidate = () => { needsRender = true; };
+let software = false;
+try {
+  const probe = document.createElement('canvas').getContext('webgl2') || document.createElement('canvas').getContext('webgl');
+  const dbg = probe && probe.getExtension('WEBGL_debug_renderer_info');
+  const gpuName = probe ? (dbg ? probe.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : probe.getParameter(probe.RENDERER)) : 'none';
+  software = /swiftshader|llvmpipe|software|basic render|microsoft basic/i.test(String(gpuName));
+  console.log('[jbah] gpu:', gpuName, software ? '(software: shadows and antialias off)' : '');
+  renderer = new THREE.WebGLRenderer({ canvas: el.canvas, antialias: !software, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(software ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
+  renderer.shadowMap.enabled = !software; renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+  scene = new THREE.Scene(); scene.background = new THREE.Color(0xd6e6f2); scene.fog = new THREE.Fog(0xd6e6f2, 70, 160);
+  camera = new THREE.PerspectiveCamera(50, 1, 0.05, 700);
+  controls = new OrbitControls(camera, el.canvas);
+  controls.enableDamping = true; controls.maxPolarAngle = Math.PI / 2 - 0.03; controls.minDistance = 1.5; controls.maxDistance = 120;
+  hemi = new THREE.HemisphereLight(0xe8f0f8, 0xb3b0a4, 0.9); ambient = new THREE.AmbientLight(0xffffff, 0.35);
+  scene.add(hemi); scene.add(ambient);
+  sun = new THREE.DirectionalLight(0xfff3dc, 1.7); sun.castShadow = !software;
+  sun.shadow.mapSize.set(1536, 1536); sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.02;
+  scene.add(sun); scene.add(sun.target);
+  new ResizeObserver(() => {
+    const w = el.viewport.clientWidth, h = el.viewport.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); invalidate();
+  }).observe(el.viewport);
+  controls.addEventListener('change', invalidate);
+} catch (err) {
+  renderer = null;
+  const n = document.createElement('div'); n.className = 'nogl';
+  n.textContent = 'This browser could not start WebGL, so the 3D view is unavailable. The Plan view still works.';
+  el.viewport.appendChild(n);
+}
+
+// A tone-mapped equirectangular photo as sky and environment light. Skipped on file:// where WebGL cannot read local images.
+function loadSky(url) {
+  if (!renderer || location.protocol === 'file:') return;
+  new THREE.TextureLoader().load(url, tex => {
+    tex.mapping = THREE.EquirectangularReflectionMapping; tex.colorSpace = THREE.SRGBColorSpace;
+    scene.background = tex;
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromEquirectangular(tex).texture; pmrem.dispose();
+    scene.environmentIntensity = 0.5;
+    hemi.intensity = 0.4; ambient.intensity = 0.2;
+    scene.fog = new THREE.Fog(0xcfdde3, 160, 560);
+    console.log('[jbah] sky loaded'); invalidate();
+  }, undefined, () => console.log('[jbah] no sky image next to the page, keeping the plain sky'));
+}
+
+function fitLights(model) {
+  if (!renderer) return;
+  const { minX, maxX, minY, maxY } = model.bbox;
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, R = Math.max(maxX - minX, maxY - minY) / 2 + 10;
+  sun.position.set(cx - 24, 38, -cy + 30); sun.target.position.set(cx, 0, -cy);
+  const sc = sun.shadow.camera; sc.left = -R; sc.right = R; sc.top = R; sc.bottom = -R; sc.near = 1; sc.far = 140; sc.updateProjectionMatrix();
+}
+
+function setMsg(text, kind) { el.msg.textContent = text || ''; el.msg.className = 'msg' + (kind ? ' ' + kind : ''); }
+let toastTimer = 0;
+function toast(text) { el.status.textContent = text; el.status.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.status.hidden = true; }, 2600); }
+
+const planFloor = () => state.floor ?? state.model.groundIndex;
+const walkFloor = () => tour ? tour.fi : (state.floor ?? state.model.groundIndex);
+const levelLabel = f => f.level > 0 ? '+' + f.level : String(f.level).replace('-', '−');
+
+function renderPanel(model) {
+  const multi = model.floors.length > 1;
+  el.name.textContent = model.spec.name || 'Untitled house';
+  el.desc.textContent = model.spec.description || '';
+  el.desc.hidden = !model.spec.description;
+  const win = model.openings.filter(o => o.type === 'window').length, doors = model.openings.filter(o => o.type === 'door').length;
+  el.statArea.innerHTML = `<b>${fmt1(model.totalArea)} m²</b> floor area`;
+  el.statFoot.innerHTML = `<b>${fmt(model.bbox.maxX - model.bbox.minX)} × ${fmt(model.bbox.maxY - model.bbox.minY)} m</b> footprint`;
+  el.statRooms.innerHTML = `${multi ? `<b>${model.floors.length}</b> floors · ` : ''}<b>${model.rooms.length}</b> rooms · <b>${doors}</b> doors · <b>${win}</b> windows`;
+  const rows = [];
+  for (const f of model.floors.slice().reverse()) {
+    if (multi) rows.push(`<tr class="fl"><td>${esc(f.name)}</td><td class="num">level ${levelLabel(f)}</td><td class="num">${fmt1(f.totalArea)}</td></tr>`);
+    for (const r of f.rooms) rows.push(`<tr><td>${esc(r.name)}</td><td class="num">${fmt(r.w)} × ${fmt(r.d)}</td><td class="num">${fmt1(r.area)}</td></tr>`);
+  }
+  el.rooms.innerHTML = rows.join('');
+  el.roomsFoot.innerHTML = `<tr><td>Total</td><td class="num">${model.rooms.length} rooms</td><td class="num">${fmt1(model.totalArea)}</td></tr>`;
+  // floor picker
+  el.floorSeg.innerHTML = '';
+  el.floorSeg.hidden = !multi;
+  if (multi) {
+    const mk = (label, idx, title) => { const b = document.createElement('button'); b.textContent = label; b.title = title; b.dataset.floor = idx == null ? '' : String(idx); b.addEventListener('click', () => setFloor(idx)); el.floorSeg.appendChild(b); };
+    mk('All', null, 'Whole house');
+    for (const f of model.floors.slice().reverse()) mk(levelLabel(f), f.index, f.name);
+  }
+  syncFloorButtons();
+}
+function syncFloorButtons() {
+  for (const b of el.floorSeg.querySelectorAll('button')) { const on = (b.dataset.floor === '' ? null : Number(b.dataset.floor)) === state.floor; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
+  const rb = $('btn-roof'); rb.setAttribute('aria-disabled', String(state.floor != null));
+}
+
+function renderPlan() { if (state.model) { el.planWrap.innerHTML = planSVG(state.model, planFloor(), { furniture: state.furniture }); drawTourOnPlan(); } }
+
+// Which parts of the house are shown: the chosen storey and everything below it, the roof only with the whole house.
+function applyVisibility() {
+  if (!house) return;
+  const ud = house.userData, m = state.model, top = m.topIndex;
+  const sel = state.cam === 'walk' ? null : state.floor;
+  const topShown = sel == null ? top : sel;
+  ud.floorGroups.forEach((fg, i) => { fg.visible = i <= topShown; });
+  ud.ceilings.forEach((c, i) => { c.visible = i < topShown || (i === top && sel == null && state.roof); });
+  ud.roof.visible = sel == null && state.roof;
+  for (const fgrp of ud.furniture) fgrp.visible = state.furniture;
+  const focus = state.cam === 'walk' ? walkFloor() : (sel == null ? null : sel);
+  const underground = focus != null && m.floors[focus].elevation < m.terrain.high - 0.5;
+  ud.terrain.visible = !underground; ud.base.visible = underground;
+  invalidate();
+}
+
+function applySpec(spec, opts = {}) {
+  const { errors, warnings } = validate(spec);
+  if (!errors.length) validateTour(spec, errors, warnings);
+  if (errors.length) { setMsg('Not applied:\n• ' + errors.join('\n• '), 'err'); return false; }
+  if (tour) stopTour();
+  state.spec = spec; state.model = deriveModel(spec); tourCache = null;
+  if (state.floor != null && state.floor > state.model.topIndex) state.floor = null;
+  if (renderer) {
+    if (house) { scene.remove(house); disposeGroup(house); }
+    house = buildScene(state.model); scene.add(house);
+    fitLights(state.model);
+  }
+  renderPanel(state.model);
+  renderPlan();
+  applyVisibility();
+  if (!opts.keepEditor) el.editor.value = JSON.stringify(spec, null, 2);
+  if (warnings.length) setMsg('Applied with warnings:\n• ' + warnings.join('\n• '), 'warn');
+  else setMsg(opts.quiet ? '' : 'Applied.', '');
+  return true;
+}
+
+function setPressed(ids, onId) { for (const id of ids) { const b = $(id); b.classList.toggle('on', id === onId); b.setAttribute('aria-pressed', String(id === onId)); } }
+
+function syncHash() {
+  const name = state.view === 'plan' ? 'plan' : tour ? 'tour' : (state.cam === 'top' && !state.roof ? 'dollhouse' : state.cam);
+  try { if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name); } catch {}
+}
+const HASH_VIEWS = {
+  plan: () => setView('plan'),
+  orbit: () => { setView('3d'); setCamera('orbit'); },
+  top: () => { setView('3d'); setCamera('top'); },
+  dollhouse: () => { setView('3d'); setRoof(false); setCamera('top'); },
+  walk: () => { setView('3d'); setCamera('walk'); },
+  north: () => {
+    setView('3d'); setCamera('orbit');
+    const hb = state.model.bbox, cx = (hb.minX + hb.maxX) / 2, cy = (hb.minY + hb.maxY) / 2, s = Math.max(hb.maxX - hb.minX, hb.maxY - hb.minY);
+    camera.position.set(cx + s * 1.3, s * 0.7 + 2, -cy - s * 1.5); controls.target.set(cx, 1.5, -cy); controls.update(); invalidate();
+  },
+};
+function applyHash() { const h = (location.hash || '').slice(1); if (HASH_VIEWS[h]) HASH_VIEWS[h](); }
+window.addEventListener('hashchange', applyHash);
+
+function setView(view) {
+  state.view = view; invalidate();
+  el.planWrap.hidden = view !== 'plan';
+  if (view === 'plan') renderPlan();
+  setPressed(['btn-3d', 'btn-plan'], view === 'plan' ? 'btn-plan' : 'btn-3d');
+  const walking = view === '3d' && state.cam === 'walk';
+  el.walkHelp.hidden = !walking; el.dpad.hidden = !(walking && isTouch);
+  syncHash();
+}
+
+function setFloor(idx) {
+  state.floor = idx;
+  syncFloorButtons();
+  renderPlan();
+  if (renderer && state.cam === 'walk') placeWalker();
+  applyVisibility();
+  const f = idx == null ? null : state.model.floors[idx];
+  toast(f ? `${f.name} (level ${levelLabel(f)})` : 'Whole house');
+}
+
+function setFurniture(on) {
+  state.furniture = on;
+  const b = $('btn-furn'); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on));
+  applyVisibility(); renderPlan();
+}
+
+function setRoof(on) {
+  state.roof = on;
+  const b = $('btn-roof'); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on));
+  applyVisibility(); syncHash();
+}
+
+function placeWalker() {
+  const m = state.model, f = m.floors[walkFloor()];
+  const doors = f.openings.filter(o => o.type === 'door' && o.segment && o.segment.kind === 'ext');
+  const entry = doors.find(o => /entr|front|main/i.test(o.label)) || doors[0];
+  walker.eyeY = f.elevation + 1.6;
+  let yaw = 0;
+  if (entry) {
+    const s = entry.segment, mid = (entry.lo + entry.hi) / 2;
+    const vx = s.axis === 'x' ? 0 : -entry.out, vy = s.axis === 'x' ? -entry.out : 0;
+    const px = (s.axis === 'x' ? mid : entry.cEdge) + vx * 1.4, py = (s.axis === 'x' ? entry.cEdge : mid) + vy * 1.4;
+    camera.position.set(px, walker.eyeY, -py); yaw = Math.atan2(-vx, vy);
+  } else {
+    const r = f.rooms.slice().sort((a, b) => b.area - a.area)[0];
+    camera.position.set(r.x + r.w / 2, walker.eyeY, -(r.y + r.d / 2));
+  }
+  walker.yaw = yaw; walker.pitch = 0; camera.rotation.set(0, yaw, 0, 'YXZ');
+}
+
+function setCamera(mode) {
+  if (!renderer) return;
+  if (tour) stopTour();
+  state.cam = mode;
+  const { minX, maxX, minY, maxY } = state.model.bbox;
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, size = Math.max(maxX - minX, maxY - minY);
+  if (mode === 'walk') {
+    controls.enabled = false; placeWalker();
+    el.walkHelp.textContent = isTouch ? 'Drag to look around · arrows to move · Orbit to leave' : 'Drag to look · W A S D or arrows to move · Shift to hurry · Esc to leave';
+  } else {
+    controls.enabled = true;
+    if (mode === 'orbit') {
+      const sb = state.model.site, hb = state.model.bbox;
+      const scx = ((sb.minX + sb.maxX) / 2 + (hb.minX + hb.maxX) / 2) / 2, scy = ((sb.minY + sb.maxY) / 2 + (hb.minY + hb.maxY) / 2) / 2;
+      const ss = Math.max(sb.maxX - sb.minX, sb.maxY - sb.minY) * 0.8;
+      camera.position.set(scx - ss * 0.95, ss * 0.6 + 2.5, -scy + ss * 1.1); controls.target.set(scx, 1, -scy);
+    } else {
+      const f = state.model.floors[state.floor ?? state.model.topIndex];
+      camera.position.set(cx, f.elevation + size * 1.75, -cy + 0.01); controls.target.set(cx, f.elevation, -cy);
+    }
+    controls.update();
+  }
+  setPressed(['btn-orbit', 'btn-top', 'btn-walk'], 'btn-' + mode);
+  setView(state.view); applyVisibility();
+}
+
+function stepWalk(dt) {
+  const fast = keys.has('ShiftLeft') || keys.has('ShiftRight');
+  let f = 0, r = 0;
+  if (keys.has('KeyW') || keys.has('ArrowUp')) f += 1;
+  if (keys.has('KeyS') || keys.has('ArrowDown')) f -= 1;
+  if (keys.has('KeyD') || keys.has('ArrowRight')) r += 1;
+  if (keys.has('KeyA') || keys.has('ArrowLeft')) r -= 1;
+  if (f || r) {
+    const yaw = walker.yaw;
+    const mv = new THREE.Vector3(-Math.sin(yaw) * f + Math.cos(yaw) * r, 0, -Math.cos(yaw) * f - Math.sin(yaw) * r).normalize().multiplyScalar((fast ? 4.5 : 2.2) * dt);
+    camera.position.add(mv);
+    const b = state.model.site;
+    camera.position.x = THREE.MathUtils.clamp(camera.position.x, b.minX - 6, b.maxX + 6);
+    camera.position.z = THREE.MathUtils.clamp(camera.position.z, -b.maxY - 6, -b.minY + 6);
+  }
+  camera.position.y = walker.eyeY;
+  camera.rotation.set(walker.pitch, walker.yaw, 0, 'YXZ');
+}
+
+let last = performance.now(), firstFrameLogged = false;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  if (renderer) {
+    if (state.cam === 'walk') { if (tour) { if (stepTour(dt)) needsRender = true; } else { stepWalk(dt); if (keys.size) needsRender = true; } }
+    else if (controls.update()) needsRender = true;
+    if (state.view === '3d' && needsRender) { needsRender = false; renderer.render(scene, camera); if (!firstFrameLogged) { firstFrameLogged = true; console.log('[jbah] first frame rendered'); } }
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------- guided tour ----------
+// A tour is a list of stops (rooms or points, per storey). The route between stops goes through the doors (rooms are
+// rectangles, so a straight line inside one never meets a wall), around stairs that stand in the way, and up or down
+// the stair flights between storeys. The corners are then cut into a smooth curve, which the camera walks at an even
+// pace while looking a little ahead. Plan coordinates throughout; world is (x, height, -y).
+const OUTSIDE = '\u0000outside';
+const TOUR = { speed: 1.2, stairFactor: 0.55, accel: 0.8, lookAhead: 1.7, eye: 1.6, doorDepth: 0.5, wallGap: 0.12, stairGap: 0.06, furnitureGap: 0.2 };
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const tourBar = $('tour-bar'), tourPlay = $('tour-play'), tourWhere = $('tour-where'), tourFill = $('tour-fill');
+const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg>';
+const ICON_PAUSE = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 2.5h3.2v11H3.5zM9.3 2.5h3.2v11H9.3z"/></svg>';
+const ICON_AGAIN = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5V0L4.5 2.7 8 5.4V3.4a4.6 4.6 0 1 1-4.6 4.6H1.5A6.5 6.5 0 1 0 8 1.5z"/></svg>';
+
+const inRect = (p, r, m = 0) => p[0] > r.x - m && p[0] < r.x + r.w + m && p[1] > r.y - m && p[1] < r.y + r.d + m;
+const grow = (r, m) => ({ x: r.x - m, y: r.y - m, w: r.w + 2 * m, d: r.d + 2 * m });
+const dist2 = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
+const wrapAngle = a => Math.atan2(Math.sin(a), Math.cos(a));
+const yawFor = (dx, dy) => Math.atan2(-dx, dy); // plan direction to camera yaw, as in placeWalker
+const roomAtP = (f, p) => { const r = f.rooms.find(r => inRect(p, r)); return r ? r.name : OUTSIDE; };
+const stairRects = f => f.stairs.map(s => grow(s, TOUR.stairGap));
+// Plan footprints of a storey's furniture, or of one room's (chairs left out: they stand under tables), grown by m.
+function furnitureRects(f, m, only) {
+  const out = [];
+  for (const r of only ? [only] : f.rooms) for (const it of r.furniture || []) {
+    if (it.type === 'chair') continue;
+    const ex = (it.rot % 180 ? it.d : it.w) / 2, ey = (it.rot % 180 ? it.w : it.d) / 2;
+    out.push({ x: r.x + it.x - ex - m, y: r.y + it.y - ey - m, w: 2 * (ex + m), d: 2 * (ey + m) });
+  }
+  return out;
+}
+// Overlapping rectangles become their common bounding box, so a detour never turns at a corner inside a neighbour.
+function mergeRects(list) {
+  const rs = list.map(r => ({ ...r }));
+  for (let changed = true; changed;) {
+    changed = false;
+    outer: for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
+      const a = rs[i], b = rs[j];
+      if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.d && b.y < a.y + a.d) {
+        const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
+        rs[i] = { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, d: Math.max(a.y + a.d, b.y + b.d) - y };
+        rs.splice(j, 1); changed = true; break outer;
+      }
+    }
+  }
+  return rs;
+}
+// What a route inside one room must go round: its stairs and furniture, with room to pass, cut to the room.
+function roomObstacles(f, room) {
+  if (!room) return [];
+  const cache = f._obs || (f._obs = new Map());
+  if (cache.has(room.name)) return cache.get(room.name);
+  const clip = o => {
+    const x = Math.max(o.x, room.x), y = Math.max(o.y, room.y), x2 = Math.min(o.x + o.w, room.x2), y2 = Math.min(o.y + o.d, room.y2);
+    return x2 > x && y2 > y ? { x, y, w: x2 - x, d: y2 - y } : null;
+  };
+  const list = mergeRects([...stairRects(f), ...furnitureRects(f, TOUR.furnitureGap, room)].map(clip).filter(Boolean));
+  cache.set(room.name, list);
+  return list;
+}
+const roomByName = (f, name) => f.rooms.find(r => r.name === name);
+
+// Ground under an outside point: a deck of that storey, otherwise the terrain.
+function groundAt(model, fi, p) {
+  const f = model.floors[fi];
+  return f.decks.some(d => inRect(p, d)) ? f.elevation : terrainHeight(model.terrain, p[1]);
+}
+
+// Every door and wall opening of a storey as a pair of links between the rooms (or outside) on either side.
+// via = [point in front of the door, middle of the wall, point behind it], pulled closer to the wall if a stair or furniture is in the way.
+function doorLinks(f) {
+  if (f._links) return f._links;
+  const links = new Map(), add = (a, l) => { if (!links.has(a)) links.set(a, []); links.get(a).push(l); };
+  for (const op of f.openings) {
+    if (op.type === 'window' || !op.segment) continue;
+    const s = op.segment, lo = Math.max(op.lo, s.a), hi = Math.min(op.hi, s.b);
+    if (hi - lo < 0.5) continue;
+    const other = s.kind === 'int' ? s.rooms.find(r => r !== op.room.name) : OUTSIDE;
+    if (other == null) continue;
+    const mid = (lo + hi) / 2, sg = op.out;
+    const at = k => s.axis === 'x' ? [mid, op.cEdge + sg * k] : [op.cEdge + sg * k, mid];
+    const inner = s.kind === 'int' ? s.t / 2 : 0, outer = s.t - inner;
+    const reach = (base, sign, obs) => {
+      for (const d of [TOUR.doorDepth, 0.35, 0.22, 0.12, 0.07]) { const p = at(sign * (base + d)); if (!obs.some(r => inRect(p, r))) return p; }
+      return at(sign * (base + TOUR.doorDepth)); // blocked right at the door: go straight in, the detour then skips that piece
+    };
+    const pa = reach(inner, -1, roomObstacles(f, op.room)), pm = at((outer - inner) / 2), pb = reach(outer, 1, roomObstacles(f, roomByName(f, other)));
+    const n = s.axis === 'x' ? [0, sg] : [sg, 0];
+    add(op.room.name, { to: other, via: [pa, pm, pb], n, op });
+    add(other, { to: op.room.name, via: [pb, pm, pa], n: [-n[0], -n[1]], op });
+  }
+  return (f._links = links);
+}
+
+// Cheapest chain of door links from one room to another (Dijkstra on the doors), or null when there is no way through.
+function roomPath(f, from, fromRoom, to, toRoom) {
+  if (fromRoom === toRoom) return [];
+  const links = doorLinks(f), cost = new Map(), prev = new Map(), done = new Set(), open = [];
+  for (const l of links.get(fromRoom) || []) { cost.set(l, dist2(from, l.via[0]) + dist2(l.via[0], l.via[2])); prev.set(l, null); open.push(l); }
+  let best = null, bestCost = Infinity;
+  while (open.length) {
+    let bi = 0; for (let i = 1; i < open.length; i++) if (cost.get(open[i]) < cost.get(open[bi])) bi = i;
+    const l = open.splice(bi, 1)[0];
+    if (done.has(l)) continue; done.add(l);
+    const c = cost.get(l); if (c >= bestCost) break;
+    if (l.to === toRoom) { const tc = c + dist2(l.via[2], to); if (tc < bestCost) { bestCost = tc; best = l; } continue; }
+    for (const nl of links.get(l.to) || []) {
+      const nc = c + dist2(l.via[2], nl.via[0]) + dist2(nl.via[0], nl.via[2]);
+      if (nc < (cost.get(nl) ?? Infinity)) { cost.set(nl, nc); prev.set(nl, l); open.push(nl); }
+    }
+  }
+  if (!best) return null;
+  const chain = []; for (let l = best; l; l = prev.get(l)) chain.unshift(l);
+  chain.cost = bestCost;
+  return chain;
+}
+
+// Does the segment a-b pass through the inside of rectangle r? (Liang-Barsky; touching an edge or corner is fine.)
+function segHitsRect(a, b, r) {
+  let t0 = 0, t1 = 1; const dx = b[0] - a[0], dy = b[1] - a[1];
+  const clip = (p, q) => {
+    if (Math.abs(p) < 1e-12) return q > 1e-9;
+    const t = q / p;
+    if (p < 0) { if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; }
+    return true;
+  };
+  return clip(-dx, a[0] - r.x) && clip(dx, r.x + r.w - a[0]) && clip(-dy, a[1] - r.y) && clip(dy, r.y + r.d - a[1]) && t1 - t0 > 1e-6;
+}
+
+// Corner points that lead from a to b around the obstacles while staying inside bounds: [] when the way is clear, null when stuck.
+function detour(a, b, obs, bounds, depth = 0) {
+  if (depth === 0) obs = obs.filter(r => !inRect(a, r) && !inRect(b, r)); // a piece right at the start or end can't be avoided anyway
+  const hit = obs.find(r => segHitsRect(a, b, r));
+  if (!hit) return [];
+  if (depth > 6 || obs.some(r => inRect(a, r) || inRect(b, r))) return null;
+  const c = [[hit.x, hit.y], [hit.x + hit.w, hit.y], [hit.x + hit.w, hit.y + hit.d], [hit.x, hit.y + hit.d]];
+  const ok = p => (!bounds || inRect(p, bounds, 1e-6)) && !obs.some(r => r !== hit && inRect(p, r));
+  let best = null, bestLen = Infinity;
+  for (let i = 0; i < 4; i++) for (const dir of [1, -1]) {
+    if (segHitsRect(a, c[i], hit)) continue;
+    const pts = [];
+    for (let k = 0; k < 3; k++) {
+      const p = c[(i + dir * k + 4) % 4]; if (!ok(p)) break;
+      pts.push(p);
+      if (!segHitsRect(p, b, hit)) {
+        let len = 0, q = a; for (const r of [...pts, b]) { len += dist2(q, r); q = r; }
+        if (len < bestLen) { bestLen = len; best = pts.slice(); }
+        break;
+      }
+    }
+  }
+  if (!best) return null;
+  const out = []; let from = a;
+  for (const p of [...best, b]) { const sub = detour(from, p, obs, bounds, depth + 1); if (sub) out.push(...sub); out.push(p); from = p; }
+  out.pop();
+  return out;
+}
+
+// The walking line of one stair: from in front of the first step, over the middle of every tread (and the landing), to the floor above.
+function stairFlight(model, fi, st) {
+  const f = model.floors[fi], up = model.floors[fi + 1]; if (!up) return null;
+  const { steps } = stairSteps(st, (up.elevation - f.elevation) / st.steps);
+  if (steps.length < 2) return null;
+  const c = steps.map(s => [s.x + s.w / 2, s.y + s.d / 2]);
+  const unit = (a, b) => { const l = dist2(a, b) || 1; return [(b[0] - a[0]) / l, (b[1] - a[1]) / l]; };
+  const clampIn = (fl, p, ref) => {
+    const r = fl.rooms.find(r => inRect(ref, r)); if (!r) return p;
+    const m = TOUR.wallGap;
+    return [THREE.MathUtils.clamp(p[0], r.x + m, r.x2 - m), THREE.MathUtils.clamp(p[1], r.y + m, r.y2 - m)];
+  };
+  const d0 = unit(c[0], c[1]), d1 = unit(c[c.length - 2], c[c.length - 1]), cl = c[c.length - 1];
+  const bottom = clampIn(f, [c[0][0] - d0[0] * 0.75, c[0][1] - d0[1] * 0.75], c[0]);
+  const top = clampIn(up, [cl[0] + d1[0] * 0.7, cl[1] + d1[1] * 0.7], cl);
+  const pts = [{ p: bottom, fi, h: f.elevation }];
+  steps.forEach((s, i) => pts.push({ p: c[i], fi, h: f.elevation + s.top, climb: true }));
+  pts.push({ p: top, fi: fi + 1, h: up.elevation });
+  return { pts, bottom, top };
+}
+
+// Stand-in point for a room stop: the free spot nearest its centre, clear of stairs and stairwells.
+function freePoint(model, fi, r) {
+  const f = model.floors[fi], below = model.floors[fi - 1];
+  const obs = [...f.stairs, ...(below ? below.stairs : [])].map(s => grow(s, 0.35)).concat(roomObstacles(f, r).map(o => grow(o, 0.15)));
+  const c = [r.x + r.w / 2, r.y + r.d / 2];
+  if (!obs.some(o => inRect(c, o))) return c;
+  let best = c, bd = Infinity;
+  const mx = Math.min(0.45, r.w / 2 - 0.05), my = Math.min(0.45, r.d / 2 - 0.05);
+  for (let x = r.x + mx; x <= r.x2 - mx + 1e-9; x += 0.2) for (let y = r.y + my; y <= r.y2 - my + 1e-9; y += 0.2) {
+    const p = [x, y]; if (obs.some(o => inRect(p, o))) continue;
+    const d = dist2(p, c); if (d < bd) { bd = d; best = p; }
+  }
+  return best;
+}
+
+// Share of a room taken up by stairs and stairwells; such rooms are passed through, not visited, by the automatic tour.
+function stairShare(model, fi, r) {
+  const f = model.floors[fi], below = model.floors[fi - 1];
+  let a = 0;
+  for (const s of [...f.stairs, ...(below ? below.stairs : [])]) {
+    const w = Math.min(r.x2, s.x + s.w) - Math.max(r.x, s.x), d = Math.min(r.y2, s.y + s.d) - Math.max(r.y, s.y);
+    if (w > 0 && d > 0) a += w * d;
+  }
+  return a / r.area;
+}
+
+function resolveStops(model, list) {
+  let fi = model.groundIndex; const out = [];
+  for (let s of list) {
+    if (typeof s === 'string') s = { room: s };
+    if (!s || typeof s !== 'object') continue;
+    if (isNum(s.level)) { const k = model.floors.findIndex(f => f.level === s.level); if (k >= 0) fi = k; }
+    const f = model.floors[fi];
+    let p, room;
+    if (s.room != null) { const r = f.rooms.find(r => r.name === s.room); if (!r) continue; p = freePoint(model, fi, r); room = r.name; }
+    else if (isNum(s.x) && isNum(s.y)) { p = [s.x, s.y]; room = roomAtP(f, p); }
+    else continue;
+    let lookAt = null;
+    if (typeof s.look === 'string') { const r = f.rooms.find(r => r.name === s.look); if (r) lookAt = [r.x + r.w / 2, r.y + r.d / 2]; }
+    else if (s.look && isNum(s.look.x) && isNum(s.look.y)) lookAt = [s.look.x, s.look.y];
+    out.push({ fi, p, room, label: s.label || (room === OUTSIDE ? 'Outside' : room), pause: isNum(s.pause) && s.pause > 0 ? s.pause : 0, lookAt });
+  }
+  return out;
+}
+
+// The tour when the spec has none: in at the entrance, every room of the entrance storey, the storeys above, then the
+// ones below, nearest room first, and out through the last storey's garden door.
+function autoStops(model) {
+  const gi = model.groundIndex, order = [gi];
+  for (let i = gi + 1; i <= model.topIndex; i++) order.push(i);
+  for (let i = gi - 1; i >= 0; i--) order.push(i);
+  const stops = [], f0 = model.floors[gi];
+  const outLink = (f, op) => (doorLinks(f).get(OUTSIDE) || []).find(l => l.op === op);
+  const outside = (f, op, k) => { const l = outLink(f, op); return l && [l.via[1][0] - l.n[0] * k, l.via[1][1] - l.n[1] * k]; };
+  const doors = f0.openings.filter(o => o.type === 'door' && o.segment && o.segment.kind === 'ext' && outLink(f0, o));
+  const entry = doors.find(o => /entr|front|main/i.test(o.label)) || doors[0];
+  let p = entry ? outside(f0, entry, 2.1) : null;
+  if (p) stops.push({ fi: gi, p, room: OUTSIDE, label: entry.label || 'Entrance', pause: 0.8, lookAt: null });
+  let prevFi = gi;
+  for (const fi of order) {
+    const f = model.floors[fi];
+    if (fi !== prevFi) {
+      const fl = fi > prevFi ? model.floors[fi - 1].stairs.map(s => stairFlight(model, fi - 1, s)).find(Boolean) : f.stairs.map(s => stairFlight(model, fi, s)).find(Boolean);
+      if (fl) p = fi > prevFi ? fl.top : fl.bottom;
+      prevFi = fi;
+    }
+    if (!p) { const r = f.rooms[0]; p = [r.x + r.w / 2, r.y + r.d / 2]; }
+    const todo = new Set(f.rooms.filter(r => stairShare(model, fi, r) < 0.4).map(r => r.name));
+    while (todo.size) {
+      const from = roomAtP(f, p);
+      let best = null;
+      for (const name of todo) {
+        const r = f.rooms.find(x => x.name === name), q = freePoint(model, fi, r);
+        const chain = roomPath(f, p, from, q, name); if (!chain) continue;
+        const c = chain.length ? chain.cost : dist2(p, q);
+        if (!best || c < best.c) best = { r, q, c, chain };
+      }
+      if (!best) break;
+      todo.delete(best.r.name);
+      for (const l of best.chain) { const r = f.rooms.find(x => x.name === l.to); if (r && r.area < 9) todo.delete(r.name); }
+      stops.push({ fi, p: best.q, room: best.r.name, label: best.r.name, pause: best.r.area >= 9 ? 1.2 : 0, lookAt: null });
+      p = best.q;
+    }
+  }
+  // Finish outside the exterior door nearest the last room.
+  const lf = model.floors[prevFi];
+  const exits = lf.openings.filter(o => o.type === 'door' && o.segment && o.segment.kind === 'ext' && outLink(lf, o));
+  if (exits.length && p) {
+    const ex = exits.map(o => ({ o, q: outside(lf, o, 2.6) })).sort((a, b) => dist2(a.q, p) - dist2(b.q, p))[0];
+    stops.push({ fi: prevFi, p: ex.q, room: OUTSIDE, label: ex.o.label || 'Outside', pause: 1.5, lookAt: null });
+  }
+  return stops;
+}
+
+// Builds the walkable route: dense points with eye height and storey, the stops along it, and any warnings.
+function buildTour(model) {
+  const warnings = new Set();
+  const ts = model.spec.tour, list = ts == null ? null : (Array.isArray(ts) ? ts : ts.stops);
+  const speed = (ts && !Array.isArray(ts) && isNum(ts.speed) && ts.speed > 0 ? ts.speed : TOUR.speed) * (reducedMotion ? 0.7 : 1);
+  const stops = list && list.length ? resolveStops(model, list) : autoStops(model);
+  if (!stops.length) return null;
+  const V = [];
+  const push = (p, fi, o = {}) => V.push({ x: p[0], y: p[1], fi, h: o.h, climb: !!o.climb, keep: !!o.keep, stop: o.stop || null });
+  const label = (f, r) => r === OUTSIDE ? 'outside' : r;
+  let cur = null;
+  const leg = (fi, a, b, room) => {
+    const f = model.floors[fi];
+    let obs, bounds = null;
+    if (room === OUTSIDE) obs = [grow({ x: f.bbox.minX, y: f.bbox.minY, w: f.bbox.maxX - f.bbox.minX, d: f.bbox.maxY - f.bbox.minY }, 0.4)];
+    else {
+      const r = f.rooms.find(x => x.name === room);
+      obs = roomObstacles(f, r);
+      if (r) bounds = grow(r, -TOUR.wallGap);
+    }
+    const d = detour(a, b, obs, bounds);
+    if (d === null) warnings.add(room === OUTSIDE ? `Tour: no way round the house on ${f.name}, so it cuts through.` : `Tour: furniture or a stair in ${room} (${f.name}) leaves no way round, so the camera passes through it.`);
+    for (const p of d || []) push(p, fi, { keep: true });
+  };
+  const routeTo = q => {
+    const f = model.floors[cur.fi], ra = roomAtP(f, cur.p), rb = roomAtP(f, q);
+    const chain = roomPath(f, cur.p, ra, q, rb);
+    if (chain === null) { warnings.add(`Tour: no door leads from ${label(f, ra)} to ${label(f, rb)} on ${f.name}, so it goes straight through the wall.`); return; }
+    let from = cur.p, room = ra;
+    for (const l of chain) {
+      leg(cur.fi, from, l.via[0], room);
+      for (const v of l.via) push(v, cur.fi);
+      from = l.via[2]; room = l.to;
+    }
+    leg(cur.fi, from, q, room);
+  };
+  stops.forEach((st, k) => {
+    if (k === 0) { push(st.p, st.fi, { keep: true, stop: st }); cur = { fi: st.fi, p: st.p }; return; }
+    while (cur.fi !== st.fi) {
+      const up = st.fi > cur.fi, low = up ? cur.fi : cur.fi - 1, next = up ? cur.fi + 1 : cur.fi - 1;
+      const flights = model.floors[low].stairs.map(s => stairFlight(model, low, s)).filter(Boolean);
+      if (!flights.length) {
+        warnings.add(`Tour: no stair between ${model.floors[low].name} and ${model.floors[low + 1].name}, so it passes through the floor.`);
+        cur = { fi: next, p: cur.p }; push(cur.p, cur.fi); continue;
+      }
+      const fl = flights.sort((a, b) => dist2(up ? a.bottom : a.top, cur.p) - dist2(up ? b.bottom : b.top, cur.p))[0];
+      const pts = up ? fl.pts : fl.pts.slice().reverse();
+      routeTo(pts[0].p);
+      for (const q of pts) push(q.p, q.fi, { h: q.h, climb: q.climb });
+      cur = { fi: next, p: pts[pts.length - 1].p };
+    }
+    routeTo(st.p); push(st.p, st.fi, { keep: true, stop: st }); cur.p = st.p;
+  });
+
+  // Heights for the plain points, then drop points that repeat the one before.
+  const baseH = v => { const f = model.floors[v.fi]; return roomAtP(f, [v.x, v.y]) === OUTSIDE ? groundAt(model, v.fi, [v.x, v.y]) : f.elevation; };
+  let P = [];
+  for (const v of V) {
+    if (v.h == null) v.h = baseH(v);
+    const l = P[P.length - 1];
+    if (l && Math.hypot(v.x - l.x, v.y - l.y) < 0.05 && Math.abs(v.h - l.h) < 0.05) { if (v.keep) { l.keep = true; l.stop = l.stop || v.stop; } continue; }
+    P.push(v);
+  }
+  if (P.length === 1) P.push({ ...P[0], x: P[0].x + 0.01, keep: true, stop: null });
+  // Corner cutting (Chaikin), keeping stops and detour corners exactly where they are.
+  for (let it = 0; it < 4; it++) {
+    const out = [P[0]];
+    for (let i = 0; i < P.length - 1; i++) {
+      const A = P[i], B = P[i + 1], lerp = (t, src) => ({ ...src, x: A.x + (B.x - A.x) * t, y: A.y + (B.y - A.y) * t, h: A.h + (B.h - A.h) * t, keep: false, stop: null });
+      const keepA = A.keep || i === 0, keepB = B.keep || i === P.length - 2;
+      if (!keepA) out.push(lerp(0.25, A));
+      out.push(keepB ? B : lerp(0.75, B));
+    }
+    P = out;
+  }
+  // Even spacing for the terrain and the speed profile.
+  const D = [P[0]];
+  for (let i = 1; i < P.length; i++) {
+    const A = P[i - 1], B = P[i], n = Math.ceil(Math.hypot(B.x - A.x, B.y - A.y) / 0.3);
+    for (let k = 1; k < n; k++) { const t = k / n; D.push({ ...A, x: A.x + (B.x - A.x) * t, y: A.y + (B.y - A.y) * t, h: A.h + (B.h - A.h) * t, keep: false, stop: null }); }
+    D.push(B);
+  }
+  for (const v of D) if (!v.climb) v.h = baseH(v);
+  for (let pass = 0; pass < 3; pass++) { const h = D.map(v => v.h); for (let i = 1; i < D.length - 1; i++) D[i].h = (h[i - 1] + 2 * h[i] + h[i + 1]) / 4; }
+  const n = D.length, PX = new Float64Array(n), PY = new Float64Array(n), EYE = new Float64Array(n), S = new Float64Array(n), FI = new Int16Array(n), CL = new Uint8Array(n);
+  D.forEach((v, i) => { PX[i] = v.x; PY[i] = v.y; EYE[i] = v.h + TOUR.eye; FI[i] = v.fi; CL[i] = v.climb ? 1 : 0; if (i) S[i] = S[i - 1] + Math.hypot(v.x - D[i - 1].x, v.y - D[i - 1].y, EYE[i] - EYE[i - 1]); });
+  const route = { PX, PY, EYE, S, FI, CL, total: S[n - 1], speed, warnings: [...warnings], stops: [], climbStarts: [] };
+  for (let i = 1; i < n; i++) if (CL[i] && !CL[i - 1]) route.climbStarts.push(S[i]);
+  D.forEach((v, i) => {
+    if (!v.stop) return;
+    const a = D[Math.max(0, i - 3)], b = D[Math.min(n - 1, i + 3)];
+    const turn = i > 0 && i < n - 1 && Math.abs(wrapAngle(Math.atan2(b.y - v.y, b.x - v.x) - Math.atan2(v.y - a.y, v.x - a.x))) > 1.75;
+    route.stops.push({ ...v.stop, s: S[i], turn, hard: v.stop.pause > 0 || turn || !!v.stop.lookAt || i === n - 1 });
+  });
+  const last = route.stops[route.stops.length - 1]; if (last) last.hard = true;
+  return route;
+}
+
+function tourRoute() {
+  if (!state.model) return null;
+  if (!tourCache || tourCache.model !== state.model) tourCache = { model: state.model, route: buildTour(state.model) };
+  return tourCache.route;
+}
+
+function tourSample(R, s) {
+  const S = R.S; let lo = 0, hi = S.length - 1;
+  s = Math.max(0, Math.min(R.total, s));
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (S[m] <= s) lo = m; else hi = m; }
+  const t = S[hi] > S[lo] ? (s - S[lo]) / (S[hi] - S[lo]) : 0;
+  return { x: R.PX[lo] + (R.PX[hi] - R.PX[lo]) * t, y: R.PY[lo] + (R.PY[hi] - R.PY[lo]) * t, eye: R.EYE[lo] + (R.EYE[hi] - R.EYE[lo]) * t, fi: t < 0.5 ? R.FI[lo] : R.FI[hi], climb: !!(R.CL[lo] || R.CL[hi]) };
+}
+
+function tourWhereText(fi, p) {
+  const f = state.model.floors[fi], r = roomAtP(f, p);
+  const name = r !== OUTSIDE ? r : (f.decks.find(d => inRect(p, d)) || {}).name || 'Outside';
+  return `${esc(name)}<small>${esc(f.name)}</small>`;
+}
+
+function loadTour(autoplay) {
+  if (!renderer || !state.model) return;
+  const R = tourRoute();
+  if (!R) { toast('Nothing to tour'); return; }
+  setView('3d'); setCamera('walk');
+  tour = { route: R, s: 0, v: 0, next: 0, dwell: 0, dwellStop: null, playing: false, ended: false, fi: R.FI[0], yaw: 0, pitch: -0.04, offYaw: 0, offPitch: 0, setYaw: 0, setPitch: 0, where: '' };
+  const a = tourSample(R, 0), b = tourSample(R, TOUR.lookAhead);
+  tour.yaw = yawFor(b.x - a.x, b.y - a.y);
+  el.app.classList.add('touring'); tourBar.hidden = false;
+  setPressed(['btn-orbit', 'btn-top', 'btn-walk', 'btn-tour'], 'btn-tour');
+  applyVisibility(); syncHash();
+  if (R.warnings.length) { console.log('[jbah] tour warnings:\n' + R.warnings.join('\n')); toast(R.warnings[0] + (R.warnings.length > 1 ? ` (+${R.warnings.length - 1} more in the console)` : '')); }
+  setTourPlaying(!!autoplay);
+  stepTour(0);
+}
+
+function setTourPlaying(on) {
+  if (!tour) return;
+  if (on && state.view !== '3d') setView('3d');
+  if (on && tour.ended) Object.assign(tour, { s: 0, v: 0, next: 0, dwell: 0, dwellStop: null, ended: false });
+  tour.playing = on;
+  tourPlay.innerHTML = on ? ICON_PAUSE : tour.ended ? ICON_AGAIN : ICON_PLAY;
+  tourPlay.setAttribute('aria-label', on ? 'Pause tour' : tour.ended ? 'Play the tour again' : 'Play tour');
+  invalidate();
+}
+
+// Ends the tour and stays in Walk where it stopped (unless the caller switches camera right after).
+function stopTour() {
+  if (!tour) return;
+  const fi = tour.fi; tour = null;
+  el.app.classList.remove('touring'); tourBar.hidden = true;
+  const b = $('btn-tour'); b.classList.remove('on'); b.setAttribute('aria-pressed', 'false');
+  if (state.cam === 'walk' && state.model.floors[fi]) {
+    walker.eyeY = state.model.floors[fi].elevation + TOUR.eye;
+    if ((state.floor ?? state.model.groundIndex) !== fi) { state.floor = fi; syncFloorButtons(); }
+    setPressed(['btn-orbit', 'btn-top', 'btn-walk'], 'btn-walk');
+    applyVisibility();
+  }
+  setView(state.view);
+}
+
+// One frame of the tour; returns true when the view changed.
+function stepTour(dt) {
+  const t = tour, R = t.route;
+  if (t.playing && state.view !== '3d') setTourPlaying(false);
+  let changed = dt === 0;
+  if (t.playing) {
+    changed = true;
+    if (t.dwell > 0) { t.dwell -= dt; if (t.dwell <= 0) t.dwellStop = null; }
+    else if (t.s >= R.total - 1e-6) { t.ended = true; setTourPlaying(false); }
+    else {
+      const here = tourSample(R, t.s);
+      let vt = R.speed * (here.climb ? TOUR.stairFactor : 1);
+      for (let k = t.next; k < R.stops.length; k++) if (R.stops[k].hard) { vt = Math.min(vt, Math.sqrt(2 * TOUR.accel * Math.max(0, R.stops[k].s - t.s)) + 0.06); break; }
+      for (const cs of R.climbStarts) if (cs > t.s && cs - t.s < 4) { vt = Math.min(vt, Math.sqrt((R.speed * TOUR.stairFactor) ** 2 + 2 * TOUR.accel * (cs - t.s))); break; }
+      t.v = t.v < vt ? Math.min(vt, t.v + TOUR.accel * dt) : vt;
+      t.s = Math.min(R.total, t.s + t.v * dt);
+      while (t.next < R.stops.length && R.stops[t.next].s <= t.s + 1e-6) {
+        const st = R.stops[t.next++];
+        if (st.hard) { t.s = st.s; t.v = 0; t.dwell = Math.max(st.pause, st.turn ? 1.1 : 0, st.lookAt ? 1.5 : 0, 0.001); t.dwellStop = st; break; }
+      }
+    }
+  }
+  const p = tourSample(R, t.s);
+  if (p.fi !== t.fi) { t.fi = p.fi; applyVisibility(); }
+  // Where to look: a little further along the route, or at the stop's "look" target while pausing there.
+  let ty = t.yaw, tp = -0.04;
+  const ls = t.dwellStop && t.dwellStop.lookAt;
+  if (ls) ty = yawFor(ls[0] - p.x, ls[1] - p.y);
+  else {
+    const q = tourSample(R, t.s + TOUR.lookAhead), dxy = Math.hypot(q.x - p.x, q.y - p.y);
+    if (dxy > 0.25) ty = yawFor(q.x - p.x, q.y - p.y);
+    if (p.climb && dxy > 0.25) tp = Math.atan2(q.eye - p.eye, dxy) * 0.6;
+  }
+  if (t.playing || dt === 0) {
+    const k = dt === 0 ? 1 : 1 - Math.exp(-dt * (t.dwell > 0 ? 2 : 3));
+    t.yaw = wrapAngle(t.yaw + wrapAngle(ty - t.yaw) * k);
+    t.pitch += (tp - t.pitch) * k;
+  }
+  // Dragging adds a look offset on top of the route; it eases back once let go.
+  if (look) { t.offYaw += walker.yaw - t.setYaw; t.offPitch += walker.pitch - t.setPitch; changed = true; }
+  else if (t.playing && (Math.abs(t.offYaw) > 1e-4 || Math.abs(t.offPitch) > 1e-4)) { const d = Math.exp(-dt * 0.9); t.offYaw *= d; t.offPitch *= d; }
+  walker.yaw = t.yaw + t.offYaw;
+  walker.pitch = THREE.MathUtils.clamp(t.pitch + t.offPitch, -1.2, 1.2);
+  t.setYaw = walker.yaw; t.setPitch = walker.pitch;
+  camera.position.set(p.x, p.eye, -p.y);
+  camera.rotation.set(walker.pitch, walker.yaw, 0, 'YXZ');
+  const where = tourWhereText(p.fi, [p.x, p.y]);
+  if (where !== t.where) { t.where = where; tourWhere.innerHTML = where; }
+  tourFill.style.width = (R.total ? 100 * t.s / R.total : 0).toFixed(1) + '%';
+  return changed;
+}
+
+// The route on the Plan view: a dashed line with numbered stops for the storey shown, and a dot where the tour is.
+function drawTourOnPlan() {
+  const m = state.model; if (!m || !(tour || m.spec.tour)) return;
+  const R = tour ? tour.route : tourRoute(); if (!R) return;
+  const svg = el.planWrap.querySelector('svg'); if (!svg) return;
+  const fi = planFloor(), parts = []; let cur = [];
+  for (let i = 0; i < R.S.length; i++) {
+    if (R.FI[i] === fi) cur.push(`${R.PX[i].toFixed(2)},${(-R.PY[i]).toFixed(2)}`);
+    else if (cur.length) { parts.push(cur); cur = []; }
+  }
+  if (cur.length) parts.push(cur);
+  let html = parts.filter(p => p.length > 1).map(p => `<polyline class="tour-route" points="${p.join(' ')}"/>`).join('');
+  R.stops.forEach((st, k) => {
+    if (st.fi !== fi) return;
+    html += `<g class="tour-stop"><circle cx="${st.p[0]}" cy="${-st.p[1]}" r="0.24"><title>${esc(st.label)}</title></circle><text x="${st.p[0]}" y="${-st.p[1] + 0.09}" text-anchor="middle">${k + 1}</text></g>`;
+  });
+  if (tour) { const p = tourSample(R, tour.s); if (p.fi === fi) html += `<circle class="tour-me" cx="${p.x}" cy="${-p.y}" r="0.2"/>`; }
+  svg.insertAdjacentHTML('beforeend', html);
+}
+
+// Spec checks for "tour", run with the rest of the validation.
+function validateTour(spec, errors, warnings) {
+  const t = spec.tour; if (t == null) return;
+  const list = Array.isArray(t) ? t : (t && typeof t === 'object' && Array.isArray(t.stops) ? t.stops : null);
+  if (!list) { errors.push('tour: needs a "stops" list.'); return; }
+  if (!Array.isArray(t) && t.speed != null && !(isNum(t.speed) && t.speed > 0)) errors.push('tour: "speed" must be a positive number (metres per second).');
+  const norm = normalizeSpec(spec); let fl = norm.floors[norm.groundIndex];
+  list.forEach((s0, i) => {
+    const s = typeof s0 === 'string' ? { room: s0 } : s0, tag = `tour stop #${i + 1}`;
+    if (!s || typeof s !== 'object') { errors.push(`${tag}: must be a room name or an object.`); return; }
+    if (s.level != null) { const f = norm.floors.find(f => f.level === s.level); if (!f) { errors.push(`${tag}: no storey with level ${s.level}.`); return; } fl = f; }
+    if (s.room != null) { if (!fl.rooms.some(r => r.name === s.room)) errors.push(`${tag}: no room "${s.room}" on ${fl.name}.`); }
+    else if (!isNum(s.x) || !isNum(s.y)) errors.push(`${tag}: give a "room" or numbers "x" and "y".`);
+    if (s.pause != null && !(isNum(s.pause) && s.pause >= 0)) errors.push(`${tag}: "pause" must be a number of seconds.`);
+    if (typeof s.look === 'string') { if (!fl.rooms.some(r => r.name === s.look)) errors.push(`${tag}: "look" names no room on ${fl.name}.`); }
+    else if (s.look != null && !(isNum(s.look.x) && isNum(s.look.y))) errors.push(`${tag}: "look" must be a room name or {"x", "y"}.`);
+  });
+  if (!list.length) warnings.push('tour: no stops, so the Tour button visits every room.');
+}
+
+window.addEventListener('keydown', e => {
+  if (!tour || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  if (e.code === 'Space') { if (e.target.tagName === 'BUTTON') e.target.blur(); e.preventDefault(); e.stopImmediatePropagation(); setTourPlaying(!tour.playing); return; }
+  if (e.code === 'Escape') { e.stopImmediatePropagation(); stopTour(); return; }
+  if (/^(Key[WASD]|Arrow(Up|Down|Left|Right))$/.test(e.code)) stopTour(); // carry on walking from here; the walk handler gets the key next
+});
+$('btn-tour').addEventListener('click', () => { if (tour) setTourPlaying(!tour.playing); else loadTour(true); });
+tourPlay.addEventListener('click', () => setTourPlaying(!tour.playing));
+$('tour-stop').addEventListener('click', () => stopTour());
+HASH_VIEWS.tour = () => loadTour(false);
+
+// ---------- input ----------
+const isTyping = e => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
+window.addEventListener('keydown', e => {
+  if (isTyping(e)) return;
+  if (e.code === 'Escape' && state.cam === 'walk') { setCamera('orbit'); return; }
+  keys.add(e.code);
+  if (state.cam === 'walk' && /^(Arrow|Space)/.test(e.code)) e.preventDefault();
+});
+window.addEventListener('keyup', e => keys.delete(e.code));
+window.addEventListener('blur', () => keys.clear());
+
+let look = null;
+el.canvas.addEventListener('pointerdown', e => {
+  if (state.cam !== 'walk') return;
+  look = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  try { el.canvas.setPointerCapture(e.pointerId); } catch {}
+});
+el.canvas.addEventListener('pointermove', e => {
+  if (!look || e.pointerId !== look.id) return;
+  walker.yaw -= (e.clientX - look.x) * 0.0045;
+  walker.pitch = THREE.MathUtils.clamp(walker.pitch - (e.clientY - look.y) * 0.0045, -1.2, 1.2);
+  look.x = e.clientX; look.y = e.clientY; invalidate();
+});
+const endLook = e => { if (look && e.pointerId === look.id) look = null; };
+el.canvas.addEventListener('pointerup', endLook);
+el.canvas.addEventListener('pointercancel', endLook);
+
+for (const b of el.dpad.querySelectorAll('button')) {
+  const k = b.dataset.key;
+  b.addEventListener('pointerdown', e => { e.preventDefault(); keys.add(k); try { b.setPointerCapture(e.pointerId); } catch {} });
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, () => keys.delete(k));
+}
+
+$('btn-3d').addEventListener('click', () => setView('3d'));
+$('btn-plan').addEventListener('click', () => setView('plan'));
+$('btn-orbit').addEventListener('click', () => setCamera('orbit'));
+$('btn-top').addEventListener('click', () => setCamera('top'));
+$('btn-walk').addEventListener('click', () => { setView('3d'); setCamera('walk'); });
+$('btn-roof').addEventListener('click', () => { if (state.floor != null) { toast('Pick "All" floors to show the roof'); return; } setRoof(!state.roof); });
+$('btn-furn').addEventListener('click', () => setFurniture(!state.furniture));
+$('btn-panel').addEventListener('click', () => {
+  const open = el.app.classList.toggle('panel-open');
+  const b = $('btn-panel'); b.classList.toggle('on', open); b.setAttribute('aria-expanded', String(open));
+});
+for (const t of document.querySelectorAll('.tabs button')) t.addEventListener('click', () => {
+  for (const o of document.querySelectorAll('.tabs button')) o.classList.toggle('on', o === t);
+  for (const name of ['rooms', 'spec', 'help']) $('tab-' + name).hidden = name !== t.dataset.tab;
+});
+$('btn-apply').addEventListener('click', () => {
+  let parsed;
+  try { parsed = JSON.parse(el.editor.value); } catch (e) { setMsg('Not valid JSON: ' + e.message, 'err'); return; }
+  if (applySpec(parsed, { keepEditor: true })) toast('Spec applied');
+});
+$('btn-reset').addEventListener('click', () => { applySpec(clone(BUILT_IN_SPEC)); toast('Back to the built-in design'); });
+$('btn-copy').addEventListener('click', () => {
+  const text = el.editor.value;
+  const fallback = () => { el.editor.focus(); el.editor.select(); toast('Press Ctrl+C to copy'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast('JSON copied'), fallback);
+  else fallback();
+});
+
+// ---------- start screen ----------
+// The team photo covers the page until Start is pressed, while the viewer loads behind it.
+// A link that names a view (#walk, #plan, #tour, ...) and a hot reload of the published page skip it.
+{
+  const splash = $('splash');
+  if (splash && (splash.hidden || window.claude?.hot?.data)) splash.remove();
+  else if (splash) {
+    el.app.inert = true;
+    const img = splash.querySelector('img');
+    // Published and in docs/ the photo sits next to the page; opened from the project folder it is still in assets/.
+    const retry = () => { if (!img.dataset.retry) { img.dataset.retry = '1'; img.src = 'assets/Start_image.jpg'; } };
+    if (img.complete && !img.naturalWidth) retry(); else img.addEventListener('error', retry);
+    if (BUILT_IN_SPEC.name) $('splash-name').textContent = BUILT_IN_SPEC.name;
+    $('btn-start').addEventListener('click', () => {
+      el.app.inert = false; splash.classList.add('leaving');
+      setTimeout(() => splash.remove(), 500);
+    });
+    $('btn-start').focus();
+  }
+}
+
+// ---------- boot ----------
+function start(saved) {
+  console.log("[jbah] start");
+  const requested = (location.hash || '').slice(1);
+  saved = saved && typeof saved === 'object' ? saved : {};
+  if (matchMedia('(min-width: 821px)').matches) { el.app.classList.add('panel-open'); $('btn-panel').classList.add('on'); $('btn-panel').setAttribute('aria-expanded', 'true'); }
+  let spec = clone(BUILT_IN_SPEC);
+  if (typeof saved.specText === 'string') { try { spec = JSON.parse(saved.specText); } catch {} }
+  state.roof = saved.roof !== false;
+  state.furniture = saved.furniture !== false; $('btn-furn').classList.toggle('on', state.furniture); $('btn-furn').setAttribute('aria-pressed', String(state.furniture));
+  state.floor = Number.isInteger(saved.floor) ? saved.floor : null;
+  $('btn-roof').classList.toggle('on', state.roof); $('btn-roof').setAttribute('aria-pressed', String(state.roof));
+  if (!applySpec(spec, { quiet: true })) applySpec(clone(BUILT_IN_SPEC), { quiet: true });
+  if (renderer) setCamera(saved.cam === 'top' ? 'top' : 'orbit'); else setView('plan');
+  loadSky('sky.jpg');
+  if (saved.view === 'plan') setView('plan');
+  if (HASH_VIEWS[requested]) HASH_VIEWS[requested]();
+  console.log("[jbah] built, first frame requested");
+  requestAnimationFrame(frame);
+}
+try { window.claude?.hot?.snapshot?.(() => ({ specText: el.editor.value, view: state.view, cam: state.cam, roof: state.roof, floor: state.floor })); } catch {}
+const fontsReady = Promise.race([(document.fonts && document.fonts.ready) || Promise.resolve(), new Promise(r => setTimeout(r, 1500))]);
+fontsReady.then(() => {
+  if (window.claude?.hot?.ready) window.claude.hot.ready(start); else start(window.claude?.hot?.data ?? null);
+});
+</script>

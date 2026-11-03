@@ -1,0 +1,1433 @@
+{
+  "name": "Husprojekt",
+  "description": "Three storeys on a slope down to the lake: souterräng with guest room, sauna and utility rooms, entrance from the north into a hall beside the open kitchen, dining and living room, a central hall from the deck door to the kitchen with the bathroom and a large dining room on its east side, a railed deck to the south, and four bedrooms upstairs. Every room has twice the area of the drawing: about 11.7 × 19.0 m outside.",
+  "units": "m",
+  "exteriorWall": 0.3,
+  "interiorWall": 0.12,
+  "slab": 0.3,
+  "roof": {
+    "type": "gable",
+    "pitch": 27,
+    "overhang": 0.5,
+    "ridge": "y"
+  },
+  "exterior": {
+    "preset": "ochre"
+  },
+  "site": {
+    "lake": {
+      "x": -8.5,
+      "y": -33.95,
+      "w": 36.8,
+      "d": 19.8,
+      "rotate": -12
+    },
+    "terrain": {
+      "high": -0.1,
+      "low": -2.8,
+      "highY": 18.8,
+      "lowY": 6.8
+    },
+    "trees": {
+      "list": [
+        {
+          "x": 16.5,
+          "y": 20.5,
+          "h": 11,
+          "kind": "leaf"
+        },
+        {
+          "x": -6.5,
+          "y": 15,
+          "h": 9,
+          "kind": "leaf"
+        },
+        {
+          "x": 15,
+          "y": -9,
+          "h": 7,
+          "kind": "birch"
+        },
+        {
+          "x": 17.5,
+          "y": -11.5,
+          "h": 6,
+          "kind": "birch"
+        },
+        {
+          "x": -5,
+          "y": -10,
+          "h": 8,
+          "kind": "birch"
+        }
+      ],
+      "scatter": {
+        "count": 42,
+        "seed": 11,
+        "spacing": 4,
+        "area": {
+          "x": -34,
+          "y": -40,
+          "w": 78,
+          "d": 78
+        }
+      }
+    },
+    "plot": {
+      "x": -20,
+      "y": -16,
+      "w": 50,
+      "d": 52,
+      "boundary": "hedge",
+      "sides": [
+        "north",
+        "east",
+        "west"
+      ]
+    },
+    "paths": [
+      {
+        "name": "Infart",
+        "material": "gravel",
+        "width": 3.5,
+        "points": [
+          [
+            10.15,
+            36
+          ],
+          [
+            10.15,
+            26.2
+          ]
+        ]
+      },
+      {
+        "name": "Parkering",
+        "material": "gravel",
+        "width": 6,
+        "points": [
+          [
+            8.4,
+            26.2
+          ],
+          [
+            8.4,
+            20.9
+          ]
+        ]
+      },
+      {
+        "name": "Stig till bryggan",
+        "material": "gravel",
+        "width": 1.2,
+        "points": [
+          [
+            3,
+            -5.2
+          ],
+          [
+            5.5,
+            -9.5
+          ],
+          [
+            8.3,
+            -13
+          ]
+        ]
+      }
+    ],
+    "jetty": {
+      "x": 7.3,
+      "y": -20.5,
+      "w": 2,
+      "d": 7.5,
+      "height": 0.6
+    },
+    "beds": [
+      {
+        "x": 0.3,
+        "y": 19,
+        "w": 8,
+        "d": 1.2,
+        "plants": "flowers"
+      },
+      {
+        "x": -2.6,
+        "y": -5,
+        "w": 1.6,
+        "d": 5,
+        "plants": "shrubs"
+      },
+      {
+        "x": 10.2,
+        "y": -8,
+        "w": 3,
+        "d": 2,
+        "plants": "flowers"
+      }
+    ],
+    "neighbours": [
+      {
+        "x": 38,
+        "y": 20,
+        "w": 9,
+        "d": 12,
+        "h": 5.6,
+        "roof": "gable",
+        "ridge": "y"
+      },
+      {
+        "x": -37,
+        "y": 22,
+        "w": 11,
+        "d": 8,
+        "h": 5.2,
+        "roof": "gable",
+        "ridge": "x"
+      },
+      {
+        "x": 36,
+        "y": -8,
+        "w": 8,
+        "d": 6,
+        "h": 3.4,
+        "roof": "gable",
+        "ridge": "x"
+      }
+    ]
+  },
+  "floors": [
+    {
+      "name": "Souterrängvåning",
+      "level": -1,
+      "height": 2.4,
+      "rooms": [
+        {
+          "name": "Förråd",
+          "x": 0,
+          "y": 11.3,
+          "w": 4.25,
+          "d": 7.1,
+          "floor": "concrete",
+          "furniture": [
+            {
+              "type": "shelf",
+              "x": 0.15,
+              "y": 4,
+              "w": 4,
+              "rot": 270
+            },
+            {
+              "type": "shelf",
+              "x": 2.1,
+              "y": 6.95,
+              "w": 3.6,
+              "rot": 180
+            },
+            {
+              "type": "shelf",
+              "x": 4.1,
+              "y": 5,
+              "w": 2.5,
+              "rot": 90
+            }
+          ]
+        },
+        {
+          "name": "Teknikrum",
+          "x": 4.25,
+          "y": 13.7,
+          "w": 6.8,
+          "d": 4.7,
+          "floor": "concrete",
+          "furniture": [
+            {
+              "type": "box",
+              "x": 6.3,
+              "y": 4.2,
+              "w": 0.7,
+              "d": 0.7,
+              "h": 1.9,
+              "label": "Värmepump"
+            },
+            {
+              "type": "box",
+              "x": 5.4,
+              "y": 4.2,
+              "w": 0.6,
+              "d": 0.6,
+              "h": 1.8,
+              "label": "Varmvattenberedare"
+            },
+            {
+              "type": "shelf",
+              "x": 0.15,
+              "y": 2.5,
+              "w": 1.6,
+              "rot": 270
+            }
+          ]
+        },
+        {
+          "name": "Sluss/Hall",
+          "x": 4.25,
+          "y": 6.8,
+          "w": 2.8,
+          "d": 6.9,
+          "floor": "tile",
+          "furniture": [
+            {
+              "type": "bench",
+              "x": 2.6,
+              "y": 5.5,
+              "rot": 90
+            }
+          ]
+        },
+        {
+          "name": "Tvättstuga",
+          "x": 7.05,
+          "y": 8.2,
+          "w": 4,
+          "d": 5.5,
+          "floor": "tile",
+          "furniture": [
+            {
+              "type": "appliance",
+              "x": 0.6,
+              "y": 5.2,
+              "rot": 180,
+              "label": "Tvättmaskin"
+            },
+            {
+              "type": "appliance",
+              "x": 1.3,
+              "y": 5.2,
+              "rot": 180,
+              "label": "Torktumlare"
+            },
+            {
+              "type": "kitchen",
+              "x": 3,
+              "y": 5.2,
+              "w": 2,
+              "rot": 180,
+              "sink": true
+            },
+            {
+              "type": "shelf",
+              "x": 0.15,
+              "y": 4,
+              "w": 1.2,
+              "rot": 270
+            }
+          ]
+        },
+        {
+          "name": "WC",
+          "x": 7.05,
+          "y": 6.8,
+          "w": 4,
+          "d": 1.4,
+          "floor": "tile",
+          "furniture": [
+            {
+              "type": "toilet",
+              "x": 3.5,
+              "y": 0.7,
+              "rot": 90
+            },
+            {
+              "type": "basin",
+              "x": 2,
+              "y": 0.25
+            }
+          ]
+        },
+        {
+          "name": "Trapphall",
+          "x": 0,
+          "y": 6.8,
+          "w": 4.25,
+          "d": 4.5,
+          "floor": "slate"
+        },
+        {
+          "name": "Bastu",
+          "x": 0,
+          "y": 3.8,
+          "w": 4.25,
+          "d": 3,
+          "floor": "pine",
+          "furniture": [
+            {
+              "type": "sauna-bench",
+              "x": 1.8,
+              "y": 2.7,
+              "w": 3,
+              "rot": 180,
+              "tiers": 2
+            },
+            {
+              "type": "sauna-bench",
+              "x": 0.5,
+              "y": 1.2,
+              "w": 2,
+              "rot": 270
+            },
+            {
+              "type": "box",
+              "x": 3.9,
+              "y": 2.5,
+              "w": 0.5,
+              "d": 0.5,
+              "h": 0.8,
+              "label": "Aggregat"
+            }
+          ]
+        },
+        {
+          "name": "Allrum",
+          "x": 0,
+          "y": 0,
+          "w": 4.25,
+          "d": 3.8,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "table",
+              "x": 2,
+              "y": 2.3,
+              "w": 1.4,
+              "d": 0.9
+            },
+            {
+              "type": "chair",
+              "x": 1.65,
+              "y": 1.5499999999999998
+            },
+            {
+              "type": "chair",
+              "x": 1.65,
+              "y": 3.05,
+              "rot": 180
+            },
+            {
+              "type": "chair",
+              "x": 2.3499999999999996,
+              "y": 1.5499999999999998
+            },
+            {
+              "type": "chair",
+              "x": 2.3499999999999996,
+              "y": 3.05,
+              "rot": 180
+            },
+            {
+              "type": "shelf",
+              "x": 2,
+              "y": 3.65,
+              "w": 1.6,
+              "rot": 180
+            }
+          ]
+        },
+        {
+          "name": "Gästrum / Allrum",
+          "x": 4.25,
+          "y": 0,
+          "w": 6.8,
+          "d": 6.8,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "sofa",
+              "x": 4.5,
+              "y": 0.6,
+              "w": 2.4
+            },
+            {
+              "type": "coffee-table",
+              "x": 4.5,
+              "y": 1.9
+            },
+            {
+              "type": "sofa",
+              "x": 6.3,
+              "y": 2,
+              "w": 1.8,
+              "rot": 90
+            },
+            {
+              "type": "armchair",
+              "x": 2.3,
+              "y": 2.3,
+              "rot": 270
+            },
+            {
+              "type": "tv-bench",
+              "x": 5,
+              "y": 6.55,
+              "rot": 180
+            }
+          ]
+        }
+      ],
+      "openings": [
+        {
+          "type": "window",
+          "room": "Allrum",
+          "side": "south",
+          "offset": 1.4,
+          "width": 2.15
+        },
+        {
+          "type": "opening",
+          "room": "Allrum",
+          "side": "east",
+          "offset": 0.15,
+          "width": 3.55,
+          "height": 2.2
+        },
+        {
+          "type": "door",
+          "room": "Gästrum / Allrum",
+          "side": "south",
+          "offset": 0.85,
+          "width": 0.9,
+          "label": "Uteplats"
+        },
+        {
+          "type": "window",
+          "room": "Gästrum / Allrum",
+          "side": "south",
+          "offset": 3.4,
+          "width": 2.25
+        },
+        {
+          "type": "window",
+          "room": "Gästrum / Allrum",
+          "side": "east",
+          "offset": 4.25,
+          "width": 1.4
+        },
+        {
+          "type": "door",
+          "room": "Gästrum / Allrum",
+          "side": "north",
+          "offset": 0.7,
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "room": "Bastu",
+          "side": "east",
+          "offset": 0.6,
+          "width": 0.7
+        },
+        {
+          "type": "opening",
+          "room": "Trapphall",
+          "side": "east",
+          "offset": 0.55,
+          "width": 3.4,
+          "height": 2.2
+        },
+        {
+          "type": "door",
+          "room": "Förråd",
+          "side": "east",
+          "offset": 0.45,
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "room": "Teknikrum",
+          "side": "south",
+          "offset": 1.4,
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "room": "Tvättstuga",
+          "side": "west",
+          "offset": 2,
+          "width": 0.8
+        },
+        {
+          "type": "window",
+          "room": "Tvättstuga",
+          "side": "east",
+          "offset": 2.25,
+          "width": 1.45,
+          "sill": 1.2,
+          "height": 0.9
+        },
+        {
+          "type": "door",
+          "room": "WC",
+          "side": "west",
+          "offset": 0.2,
+          "width": 0.7
+        }
+      ],
+      "decks": [
+        {
+          "name": "Uteplats",
+          "x": -0.4,
+          "y": -5.1,
+          "w": 11.85,
+          "d": 5.1,
+          "material": "stone"
+        }
+      ],
+      "stairs": [
+        {
+          "x": 0.2,
+          "y": 7,
+          "w": 3.85,
+          "d": 4.1,
+          "dir": "north",
+          "shape": "u",
+          "steps": 14
+        }
+      ]
+    },
+    {
+      "name": "Bottenvåning (entréplan)",
+      "level": 0,
+      "height": 2.6,
+      "rooms": [
+        {
+          "name": "Kök",
+          "x": 0,
+          "y": 11.3,
+          "w": 6.9,
+          "d": 7.1,
+          "floor": "tile",
+          "furniture": [
+            {
+              "type": "kitchen",
+              "x": 3.3,
+              "y": 6.8,
+              "w": 6.4,
+              "rot": 180,
+              "sink": true
+            },
+            {
+              "type": "kitchen",
+              "x": 0.3,
+              "y": 1.95,
+              "w": 3.3,
+              "rot": 270,
+              "stove": true
+            },
+            {
+              "type": "fridge",
+              "x": 0.35,
+              "y": 5.7,
+              "rot": 270
+            },
+            {
+              "type": "island",
+              "x": 3.3,
+              "y": 4,
+              "w": 2.4,
+              "d": 1
+            }
+          ]
+        },
+        {
+          "name": "Hall",
+          "x": 6.9,
+          "y": 16,
+          "w": 4.15,
+          "d": 2.4,
+          "floor": "slate",
+          "furniture": [
+            {
+              "type": "wardrobe",
+              "x": 0.3,
+              "y": 1.2,
+              "rot": 270
+            },
+            {
+              "type": "bench",
+              "x": 3.5,
+              "y": 0.2
+            }
+          ]
+        },
+        {
+          "name": "Matplats",
+          "x": 6.9,
+          "y": 9.5,
+          "w": 4.15,
+          "d": 6.5,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "table",
+              "x": 2.1,
+              "y": 4.3,
+              "w": 3,
+              "d": 1.1,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 1.25,
+              "y": 3.175,
+              "rot": 270
+            },
+            {
+              "type": "chair",
+              "x": 2.95,
+              "y": 3.175,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 1.25,
+              "y": 3.925,
+              "rot": 270
+            },
+            {
+              "type": "chair",
+              "x": 2.95,
+              "y": 3.925,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 1.25,
+              "y": 4.675,
+              "rot": 270
+            },
+            {
+              "type": "chair",
+              "x": 2.95,
+              "y": 4.675,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 1.25,
+              "y": 5.425,
+              "rot": 270
+            },
+            {
+              "type": "chair",
+              "x": 2.95,
+              "y": 5.425,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 2.1,
+              "y": 2.5
+            },
+            {
+              "type": "chair",
+              "x": 2.1,
+              "y": 6.1,
+              "rot": 180
+            },
+            {
+              "type": "sofa",
+              "x": 1.1,
+              "y": 1.2,
+              "w": 2,
+              "rot": 270
+            },
+            {
+              "type": "coffee-table",
+              "x": 2.3,
+              "y": 1.2,
+              "rot": 90
+            },
+            {
+              "type": "armchair",
+              "x": 3.5,
+              "y": 1.2,
+              "rot": 90
+            }
+          ]
+        },
+        {
+          "name": "Trapphall",
+          "x": 0,
+          "y": 6.8,
+          "w": 3.7,
+          "d": 4.5,
+          "floor": "slate"
+        },
+        {
+          "name": "Korridor",
+          "x": 3.7,
+          "y": 1.85,
+          "w": 3.2,
+          "d": 9.45,
+          "floor": "slate",
+          "furniture": [
+            {
+              "type": "wardrobe",
+              "x": 0.3,
+              "y": 1.2,
+              "rot": 270
+            },
+            {
+              "type": "bench",
+              "x": 2.95,
+              "y": 1.5,
+              "rot": 90
+            }
+          ]
+        },
+        {
+          "name": "Badrum",
+          "x": 6.9,
+          "y": 6.8,
+          "w": 4.15,
+          "d": 2.7,
+          "floor": "tile",
+          "furniture": [
+            {
+              "type": "bathtub",
+              "x": 3.7,
+              "y": 1.35,
+              "rot": 90
+            },
+            {
+              "type": "shower",
+              "x": 0.5,
+              "y": 2.2
+            },
+            {
+              "type": "toilet",
+              "x": 1.75,
+              "y": 2.35,
+              "rot": 180
+            },
+            {
+              "type": "basin",
+              "x": 1.6,
+              "y": 0.25
+            }
+          ]
+        },
+        {
+          "name": "Arbetsrum",
+          "x": 0,
+          "y": 1.85,
+          "w": 3.7,
+          "d": 4.95,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "desk",
+              "x": 1.85,
+              "y": 4.6,
+              "w": 1.6,
+              "rot": 180
+            },
+            {
+              "type": "chair",
+              "x": 1.85,
+              "y": 3.95
+            },
+            {
+              "type": "shelf",
+              "x": 0.15,
+              "y": 2,
+              "rot": 270
+            },
+            {
+              "type": "shelf",
+              "x": 0.15,
+              "y": 3,
+              "rot": 270
+            }
+          ]
+        },
+        {
+          "name": "Sovrum mormor/gäster",
+          "x": 6.9,
+          "y": 1.85,
+          "w": 4.15,
+          "d": 4.95,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "bed",
+              "x": 2.1,
+              "y": 3.9,
+              "rot": 180
+            },
+            {
+              "type": "nightstand",
+              "x": 1,
+              "y": 4.7
+            },
+            {
+              "type": "nightstand",
+              "x": 3.2,
+              "y": 4.7
+            },
+            {
+              "type": "wardrobe",
+              "x": 0.3,
+              "y": 2,
+              "rot": 270
+            }
+          ]
+        }
+      ],
+      "openings": [
+        {
+          "type": "window",
+          "room": "Kök",
+          "side": "north",
+          "offset": 1.55,
+          "width": 1.55
+        },
+        {
+          "type": "window",
+          "room": "Kök",
+          "side": "north",
+          "offset": 4.2,
+          "width": 1.4
+        },
+        {
+          "type": "window",
+          "room": "Kök",
+          "side": "west",
+          "offset": 3.7,
+          "width": 1.4
+        },
+        {
+          "type": "window",
+          "room": "Arbetsrum",
+          "side": "south",
+          "offset": 1,
+          "width": 1.7
+        },
+        {
+          "type": "door",
+          "room": "Arbetsrum",
+          "side": "east",
+          "offset": 3.1,
+          "width": 0.9
+        },
+        {
+          "type": "window",
+          "room": "Sovrum mormor/gäster",
+          "side": "south",
+          "offset": 1,
+          "width": 2.1
+        },
+        {
+          "type": "window",
+          "room": "Sovrum mormor/gäster",
+          "side": "east",
+          "offset": 1.55,
+          "width": 1.7
+        },
+        {
+          "type": "door",
+          "room": "Sovrum mormor/gäster",
+          "side": "west",
+          "offset": 3.55,
+          "width": 0.9
+        },
+        {
+          "type": "opening",
+          "room": "Kök",
+          "side": "south",
+          "offset": 0.4,
+          "width": 2.9,
+          "height": 2.6
+        },
+        {
+          "type": "opening",
+          "room": "Kök",
+          "side": "south",
+          "offset": 3.9,
+          "width": 2.6,
+          "height": 2.6
+        },
+        {
+          "type": "door",
+          "room": "Hall",
+          "side": "north",
+          "offset": 2.45,
+          "width": 1,
+          "label": "Entré"
+        },
+        {
+          "type": "window",
+          "room": "Hall",
+          "side": "north",
+          "offset": 0.6,
+          "width": 1.4
+        },
+        {
+          "type": "window",
+          "room": "Hall",
+          "side": "east",
+          "offset": 0.7,
+          "width": 1
+        },
+        {
+          "type": "opening",
+          "room": "Hall",
+          "side": "south",
+          "offset": 0.1,
+          "width": 4,
+          "height": 2.3
+        },
+        {
+          "type": "window",
+          "room": "Matplats",
+          "side": "east",
+          "offset": 0.3,
+          "width": 1.2
+        },
+        {
+          "type": "window",
+          "room": "Matplats",
+          "side": "east",
+          "offset": 2.3,
+          "width": 1.6
+        },
+        {
+          "type": "window",
+          "room": "Matplats",
+          "side": "east",
+          "offset": 4.6,
+          "width": 1.6
+        },
+        {
+          "type": "opening",
+          "room": "Matplats",
+          "side": "west",
+          "offset": 0.2,
+          "width": 1.6,
+          "height": 2.6
+        },
+        {
+          "type": "opening",
+          "room": "Matplats",
+          "side": "west",
+          "offset": 2.1,
+          "width": 3.6,
+          "height": 2.6
+        },
+        {
+          "type": "door",
+          "room": "Badrum",
+          "side": "west",
+          "offset": 0.6,
+          "width": 0.8
+        },
+        {
+          "type": "window",
+          "room": "Badrum",
+          "side": "east",
+          "offset": 0.9,
+          "width": 0.8,
+          "sill": 1.3,
+          "height": 0.8
+        },
+        {
+          "type": "door",
+          "room": "Korridor",
+          "side": "south",
+          "offset": 1.1,
+          "width": 1,
+          "label": "Altan"
+        },
+        {
+          "type": "opening",
+          "room": "Korridor",
+          "side": "west",
+          "offset": 5.45,
+          "width": 3.4,
+          "height": 2.3
+        }
+      ],
+      "decks": [
+        {
+          "name": "Altan",
+          "x": -0.4,
+          "y": -5.1,
+          "w": 11.85,
+          "d": 6.95,
+          "material": "wood"
+        },
+        {
+          "name": "Entré",
+          "x": 8.85,
+          "y": 18.7,
+          "w": 2.6,
+          "d": 2.1,
+          "material": "wood"
+        }
+      ],
+      "stairs": [
+        {
+          "x": 0.2,
+          "y": 7,
+          "w": 3.25,
+          "d": 4.1,
+          "dir": "north",
+          "shape": "u",
+          "steps": 15
+        }
+      ]
+    },
+    {
+      "name": "Övervåning",
+      "level": 1,
+      "height": 2.5,
+      "rooms": [
+        {
+          "name": "Barnrum 1",
+          "x": 0,
+          "y": 12.3,
+          "w": 4.8,
+          "d": 6.1,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "single-bed",
+              "x": 0.6,
+              "y": 4.9,
+              "rot": 180
+            },
+            {
+              "type": "desk",
+              "x": 4.4,
+              "y": 2.5,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 3.7,
+              "y": 2.5,
+              "rot": 270
+            },
+            {
+              "type": "wardrobe",
+              "x": 1.2,
+              "y": 0.3
+            },
+            {
+              "type": "shelf",
+              "x": 2.8,
+              "y": 0.15
+            }
+          ]
+        },
+        {
+          "name": "Föräldrasovrum",
+          "x": 4.8,
+          "y": 12.3,
+          "w": 6.25,
+          "d": 6.1,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "bed",
+              "x": 5,
+              "y": 3.6,
+              "w": 1.8,
+              "d": 2.1,
+              "rot": 90
+            },
+            {
+              "type": "nightstand",
+              "x": 5.8,
+              "y": 2.3
+            },
+            {
+              "type": "nightstand",
+              "x": 5.8,
+              "y": 4.9
+            },
+            {
+              "type": "wardrobe",
+              "x": 0.3,
+              "y": 3,
+              "rot": 270
+            },
+            {
+              "type": "wardrobe",
+              "x": 0.3,
+              "y": 4.3,
+              "rot": 270
+            },
+            {
+              "type": "desk",
+              "x": 2.4,
+              "y": 5.7,
+              "rot": 180
+            },
+            {
+              "type": "chair",
+              "x": 2.4,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "name": "Trapphall",
+          "x": 0,
+          "y": 6.5,
+          "w": 3.7,
+          "d": 5.8,
+          "floor": "slate"
+        },
+        {
+          "name": "Hall",
+          "x": 3.7,
+          "y": 6.5,
+          "w": 2.25,
+          "d": 5.8,
+          "floor": "slate",
+          "furniture": [
+            {
+              "type": "wardrobe",
+              "x": 1.95,
+              "y": 2.5,
+              "rot": 90
+            }
+          ]
+        },
+        {
+          "name": "Badrum",
+          "x": 5.95,
+          "y": 7.9,
+          "w": 5.1,
+          "d": 4.4,
+          "floor": "tile",
+          "furniture": [
+            {
+              "type": "bathtub",
+              "x": 3.9,
+              "y": 3.95
+            },
+            {
+              "type": "toilet",
+              "x": 4.75,
+              "y": 0.6,
+              "rot": 90
+            },
+            {
+              "type": "basin",
+              "x": 2,
+              "y": 0.25
+            },
+            {
+              "type": "shower",
+              "x": 0.5,
+              "y": 0.5,
+              "w": 1,
+              "d": 1
+            }
+          ]
+        },
+        {
+          "name": "Barnrum 2",
+          "x": 5.95,
+          "y": 1.85,
+          "w": 5.1,
+          "d": 6.05,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "single-bed",
+              "x": 1.2,
+              "y": 5,
+              "rot": 180
+            },
+            {
+              "type": "desk",
+              "x": 4.4,
+              "y": 2.6,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 3.7,
+              "y": 2.6,
+              "rot": 270
+            },
+            {
+              "type": "wardrobe",
+              "x": 0.3,
+              "y": 2,
+              "rot": 270
+            },
+            {
+              "type": "shelf",
+              "x": 3,
+              "y": 5.9,
+              "rot": 180
+            }
+          ]
+        },
+        {
+          "name": "Barnrum 3",
+          "x": 0,
+          "y": 0,
+          "w": 5.95,
+          "d": 6.5,
+          "floor": "oak",
+          "furniture": [
+            {
+              "type": "single-bed",
+              "x": 1,
+              "y": 5.5,
+              "rot": 180
+            },
+            {
+              "type": "desk",
+              "x": 5.6,
+              "y": 2.5,
+              "rot": 90
+            },
+            {
+              "type": "chair",
+              "x": 4.9,
+              "y": 2.5,
+              "rot": 270
+            },
+            {
+              "type": "wardrobe",
+              "x": 2.6,
+              "y": 6.2,
+              "rot": 180
+            },
+            {
+              "type": "shelf",
+              "x": 5.8,
+              "y": 4.8,
+              "rot": 90
+            }
+          ]
+        }
+      ],
+      "openings": [
+        {
+          "type": "window",
+          "room": "Barnrum 1",
+          "side": "north",
+          "offset": 1.25,
+          "width": 2.15
+        },
+        {
+          "type": "window",
+          "room": "Barnrum 1",
+          "side": "west",
+          "offset": 2,
+          "width": 1.7
+        },
+        {
+          "type": "door",
+          "room": "Barnrum 1",
+          "side": "south",
+          "offset": 3.7,
+          "width": 0.8
+        },
+        {
+          "type": "window",
+          "room": "Föräldrasovrum",
+          "side": "north",
+          "offset": 1.7,
+          "width": 2.55
+        },
+        {
+          "type": "window",
+          "room": "Föräldrasovrum",
+          "side": "east",
+          "offset": 2.1,
+          "width": 2
+        },
+        {
+          "type": "door",
+          "room": "Föräldrasovrum",
+          "side": "south",
+          "offset": 0,
+          "width": 0.8
+        },
+        {
+          "type": "door",
+          "room": "Badrum",
+          "side": "west",
+          "offset": 2.3,
+          "width": 0.8
+        },
+        {
+          "type": "window",
+          "room": "Badrum",
+          "side": "east",
+          "offset": 1.6,
+          "width": 1.1,
+          "sill": 1.3,
+          "height": 0.8
+        },
+        {
+          "type": "door",
+          "room": "Barnrum 2",
+          "side": "west",
+          "offset": 4.8,
+          "width": 0.9
+        },
+        {
+          "type": "window",
+          "room": "Barnrum 2",
+          "side": "south",
+          "offset": 1.4,
+          "width": 2.15
+        },
+        {
+          "type": "window",
+          "room": "Barnrum 2",
+          "side": "east",
+          "offset": 1.7,
+          "width": 1.95
+        },
+        {
+          "type": "door",
+          "room": "Barnrum 3",
+          "side": "north",
+          "offset": 4.1,
+          "width": 0.9
+        },
+        {
+          "type": "window",
+          "room": "Barnrum 3",
+          "side": "south",
+          "offset": 1.7,
+          "width": 2.25
+        },
+        {
+          "type": "window",
+          "room": "Barnrum 3",
+          "side": "west",
+          "offset": 2,
+          "width": 1.7
+        },
+        {
+          "type": "opening",
+          "room": "Trapphall",
+          "side": "east",
+          "offset": 0.55,
+          "width": 4.55,
+          "height": 2.3
+        }
+      ]
+    }
+  ]
+}
