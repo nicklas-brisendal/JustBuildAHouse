@@ -11,6 +11,9 @@
     "overhang": 0.5,
     "ridge": "y"
   },
+  "tour": {
+    "speed": 3.6
+  },
   "exterior": {
     "preset": "ochre"
   },
