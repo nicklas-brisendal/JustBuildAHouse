@@ -108,6 +108,8 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .plan-svg .furn .body { fill: var(--surface); fill-opacity: .85; stroke: var(--fg); stroke-width: .03; }
 .plan-svg .furn .glyph { fill: none; stroke: var(--muted); stroke-width: .025; }
 .plan-svg .furn text { fill: var(--muted); font-family: var(--font-mono); font-size: .2px; }
+.plan-svg .person circle { fill: var(--accent); fill-opacity: .8; stroke: var(--surface); stroke-width: .05; }
+.plan-svg .person text { fill: var(--fg); font-family: var(--font-display); font-weight: 600; font-size: .3px; }
 .plan-svg .ptitle { fill: var(--muted); font-family: var(--font-display); font-weight: 600; font-size: .5px; letter-spacing: .04em; text-transform: uppercase; }
 
 .hint, .status {
@@ -308,6 +310,7 @@ tr.fl td.num { font-family: var(--font-display); }
           <li><code>site.trees</code>: a <code>list</code> of trees (<code>x</code>, <code>y</code>, <code>h</code>, <code>kind</code> leaf, pine or birch) and/or a <code>scatter</code> (<code>count</code>, <code>seed</code>, <code>area</code>) that plants trees at random but never on the house, decks or lake. Change the seed for another arrangement.</li>
           <li><code>site.plot</code> (boundary <code>hedge</code>, <code>fence</code> or <code>none</code>, with <code>sides</code>), <code>site.paths</code> (polyline <code>points</code>, <code>width</code>, gravel or stone), <code>site.jetty</code>, <code>site.beds</code> (flowers or shrubs) and <code>site.neighbours</code> (plain house blocks with <code>h</code> and a roof) dress the plot. Paths cut a gap through the boundary where they cross it.</li>
           <li><code>furniture</code> on a room: items with a <code>type</code> (bed, single-bed, sofa, armchair, chair, table, coffee-table, desk, nightstand, wardrobe, shelf, tv-bench, bench, kitchen, island, stove, fridge, appliance, toilet, basin, bathtub, shower, sauna-bench, or box with a <code>label</code>), a centre <code>x</code>, <code>y</code> in metres from the room's south-west corner, optional <code>w</code>, <code>d</code>, <code>h</code> and <code>rot</code> (0, 90, 180, 270; the back of beds, sofas and chairs points to the item's own south before turning). The Furniture button hides them all.</li>
+          <li><code>people</code>: simple figures placed by <code>level</code>, <code>x</code>, <code>y</code> (storey coordinates), with <code>name</code>, <code>facing</code> as a compass bearing, <code>shirt</code>, <code>trousers</code>, <code>hair</code> and <code>skin</code> colours, <code>silhouette</code> for an all-black figure, and <code>wave</code>.</li>
           <li><code>tour</code>: the route for the Tour button, as <code>stops</code>, each a room name or <code>{ "level": 1, "room": "Kök", "pause": 2 }</code>, or <code>x</code>,<code>y</code> for a spot outside. A stop without <code>level</code> stays on the storey of the one before. <code>look</code> (a room name or <code>{x, y}</code>) turns the view during a pause, <code>speed</code> is metres per second. The tour finds its own way through the doors and up the stairs. Leave <code>tour</code> out and it visits every room.</li>
         </ul>
         <h3>Working with Claude Code</h3>
@@ -1750,6 +1753,34 @@ const BUILT_IN_SPEC = /*SPEC-START*/{
         }
       ]
     }
+  ],
+  "people": [
+    {
+      "level": 0,
+      "x": 4.2,
+      "y": -3.9,
+      "facing": 0,
+      "shirt": "#d9d5c8",
+      "trousers": "#2e3340",
+      "hair": "#7a5a3a"
+    },
+    {
+      "level": 0,
+      "x": 5.4,
+      "y": -4.2,
+      "facing": 0,
+      "shirt": "#2b3a5c",
+      "trousers": "#c9b58c",
+      "hair": "#3b2a1e"
+    },
+    {
+      "name": "Niels",
+      "level": 0,
+      "x": 6.6,
+      "y": -3.9,
+      "facing": 0,
+      "silhouette": true
+    }
   ]
 }/*SPEC-END*/;
 console.log("[jbah] module start");
@@ -1845,8 +1876,13 @@ function normalizeSpec(spec) {
   const jetty = st.jetty ? { ...rect(st.jetty), height: isNum(st.jetty.height) ? st.jetty.height : 0.6 } : null;
   const beds = (Array.isArray(st.beds) ? st.beds : []).map(b => ({ ...rect(b), plants: b.plants === 'shrubs' ? 'shrubs' : 'flowers' }));
   const neighbours = (Array.isArray(st.neighbours) ? st.neighbours : []).map(n => ({ ...rect(n), h: isNum(n.h) ? n.h : 5.5, roof: n.roof === 'flat' ? 'flat' : 'gable', ridge: n.ridge || 'auto', pitch: isNum(n.pitch) ? n.pitch : 30 }));
+  const people = (Array.isArray(spec.people) ? spec.people : []).filter(p => p && isNum(p.x) && isNum(p.y)).map(p => ({
+    name: typeof p.name === 'string' ? p.name : '', level: isNum(p.level) ? p.level : 0, x: p.x, y: p.y, facing: isNum(p.facing) ? p.facing : 0,
+    height: isNum(p.height) ? p.height : 1.78, silhouette: !!p.silhouette, wave: p.wave !== false,
+    shirt: p.shirt || '#d9d5c8', trousers: p.trousers || '#cfc2a8', hair: p.hair || '#5a3e2b', skin: p.skin || '#e8c3a4',
+  }));
   return {
-    name: spec.name, description: spec.description, trees, plot, paths, jetty, beds, neighbours,
+    name: spec.name, description: spec.description, trees, plot, paths, jetty, beds, neighbours, people,
     exteriorWall: isNum(spec.exteriorWall) ? spec.exteriorWall : DEFAULTS.exteriorWall,
     interiorWall: isNum(spec.interiorWall) ? spec.interiorWall : DEFAULTS.interiorWall,
     slab, roof: spec.roof || {}, exterior: resolveExterior(spec.exterior), floors, groundIndex: gi, terrain, lake,
@@ -1949,6 +1985,13 @@ function validate(spec) {
       if (!Array.isArray(st.paths)) errors.push('site.paths must be an array.');
       else st.paths.forEach((p, i) => { if (!p || !Array.isArray(p.points) || p.points.length < 2 || !p.points.every(q => Array.isArray(q) && isNum(q[0]) && isNum(q[1]))) errors.push(`site.paths #${i + 1}: "points" must be a list of at least two [x, y] pairs.`); });
     }
+  }
+  if (spec.people != null) {
+    if (!Array.isArray(spec.people)) errors.push('"people" must be an array.');
+    else spec.people.forEach((p, i) => {
+      if (!p || !isNum(p.x) || !isNum(p.y)) errors.push(`people #${i + 1}: needs numeric x and y.`);
+      else if (p.level != null && !floors.some((f, fi) => (multi ? f.level : 0) === p.level)) errors.push(`people #${i + 1}: no storey with level ${p.level}.`);
+    });
   }
   if (spec.site && spec.site.terrain) {
     const t = spec.site.terrain;
@@ -2122,7 +2165,7 @@ function deriveModel(spec) {
   if (norm.plot) { site.minX = Math.min(site.minX, norm.plot.x); site.maxX = Math.max(site.maxX, norm.plot.x + norm.plot.w); site.minY = Math.min(site.minY, norm.plot.y); site.maxY = Math.max(site.maxY, norm.plot.y + norm.plot.d); }
   return {
     spec, norm, floors, bbox, site, lake: norm.lake, terrain: norm.terrain, slab: norm.slab, rooms, openings, trees,
-    plot: norm.plot, paths: norm.paths, jetty: norm.jetty, beds: norm.beds, neighbours: norm.neighbours,
+    plot: norm.plot, paths: norm.paths, jetty: norm.jetty, beds: norm.beds, neighbours: norm.neighbours, people: norm.people,
     totalArea: floors.reduce((s, f) => s + f.totalArea, 0), groundIndex: norm.groundIndex, topIndex: floors.length - 1,
   };
 }
@@ -2549,6 +2592,38 @@ function buildFurniture(it, room, elev, mats) {
   return g;
 }
 
+// A person as a few primitives: legs, torso, arms (one raised and waving), head and hair, plus a name sprite.
+// Built facing north (-z); "facing" turns it clockwise like a compass bearing.
+function buildPerson(p, baseY, mats) {
+  const g = new THREE.Group(); g.position.set(p.x, baseY, -p.y); g.rotation.y = -THREE.MathUtils.degToRad(p.facing);
+  const s = p.height / 1.78, dark = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 1 });
+  const m = c => p.silhouette ? dark : new THREE.MeshStandardMaterial({ color: new THREE.Color(c), roughness: 0.9 });
+  const skin = m(p.skin), shirt = m(p.shirt), trousers = m(p.trousers), hair = m(p.hair);
+  const add = (geo, mat, x, y, z) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+  for (const sx of [-1, 1]) add(new THREE.CylinderGeometry(0.075 * s, 0.085 * s, 0.82 * s, 10), trousers, sx * 0.1 * s, 0.41 * s, 0);
+  add(new THREE.BoxGeometry(0.42 * s, 0.62 * s, 0.24 * s), shirt, 0, 1.12 * s, 0);
+  for (const side of [-1, 1]) {
+    if (p.wave) {
+      const arm = new THREE.Group(); arm.position.set(side * 0.26 * s, 1.4 * s, 0); arm.rotation.z = -side * 0.75; arm.rotation.x = 0.2; g.add(arm);
+      const a = new THREE.Mesh(new THREE.CylinderGeometry(0.05 * s, 0.05 * s, 0.6 * s, 8), shirt); a.position.y = 0.3 * s; a.castShadow = true; arm.add(a);
+      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.06 * s, 8, 6), skin); hand.position.y = 0.62 * s; arm.add(hand);
+    } else { add(new THREE.CylinderGeometry(0.05 * s, 0.05 * s, 0.6 * s, 8), shirt, side * 0.27 * s, 1.12 * s, 0); add(new THREE.SphereGeometry(0.05 * s, 8, 6), skin, side * 0.27 * s, 0.8 * s, 0); }
+  }
+  add(new THREE.SphereGeometry(0.12 * s, 14, 10), skin, 0, 1.62 * s, 0);
+  add(new THREE.SphereGeometry(0.128 * s, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), hair, 0, 1.64 * s, 0.01 * s);
+  if (p.name) {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 160; const ctx = c.getContext('2d');
+    ctx.fillStyle = 'rgba(20,26,32,0.82)'; ctx.beginPath(); ctx.roundRect(8, 24, 496, 112, 40); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; let size = 84;
+    ctx.font = `600 ${size}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`;
+    while (ctx.measureText(p.name).width > 440 && size > 30) { size -= 6; ctx.font = `600 ${size}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; }
+    ctx.fillText(p.name, 256, 80);
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: true })); sp.scale.set(1.1, 0.34, 1); sp.position.set(0, p.height + 0.4, 0); g.add(sp);
+  }
+  return g;
+}
+
 function buildTerrain(terrain, mats) {
   const geo = new THREE.PlaneGeometry(600, 600, 2, 300);
   const pos = geo.attributes.position;
@@ -2851,6 +2926,7 @@ function buildScene(model) {
       }
       const lab = makeLabel(r.name, fmt1(r.area) + ' m²'); placeLabel(lab, r.x, r.y, r.w, r.d, e + 0.035); fg.add(lab);
     }
+    for (const p of model.people) if (p.level === f.level) fg.add(buildPerson(p, e + 0.02, mats));
     const furn = new THREE.Group(); furn.name = 'furniture-' + i;
     for (const r of f.rooms) for (const it of r.furniture) furn.add(buildFurniture(it, r, e, mats));
     fg.add(furn); ud.furniture.push(furn);
@@ -2954,6 +3030,7 @@ function planSVG(model, fi, opts = {}) {
     out.push(`<path class="stair-arrow" d="M ${a[0]} ${Y(a[1])} L ${b[0]} ${Y(b[1])} M ${hx + px} ${Y(hy + py)} L ${b[0]} ${Y(b[1])} L ${hx - px} ${Y(hy - py)}"/>`);
   }
   if (opts.furniture !== false) for (const r of rooms) for (const it of r.furniture) out.push(furnitureSVG(it, r, Y));
+  for (const p of model.people) if (p.level === f.level) out.push(`<g class="person"><circle cx="${p.x}" cy="${Y(p.y)}" r="0.25"/>${p.name ? `<text x="${p.x}" y="${Y(p.y) + 0.62}" text-anchor="middle">${esc(p.name)}</text>` : ''}</g>`);
   for (const r of rooms) {
     const cx = r.x + r.w / 2, cy = r.y + r.d / 2;
     const fsz = Math.max(0.22, Math.min(0.44, (r.w - 0.2) / (r.name.length * 0.45)));
@@ -3132,6 +3209,12 @@ const HASH_VIEWS = {
   top: () => { setView('3d'); setCamera('top'); },
   dollhouse: () => { setView('3d'); setRoof(false); setCamera('top'); },
   walk: () => { setView('3d'); setCamera('walk'); },
+  garden: () => {
+    setView('3d'); setCamera('orbit');
+    const hb = state.model.bbox, cx = (hb.minX + hb.maxX) / 2, w = hb.maxX - hb.minX;
+    const low = state.model.terrain.low, ground = terrainHeight(state.model.terrain, hb.minY - 14);
+    camera.position.set(cx + w * 0.35, ground + 2.2, -(hb.minY - 14)); controls.target.set(cx, (state.model.floors[state.model.groundIndex].elevation + low) / 2 + 1.5, -hb.minY); controls.update(); invalidate();
+  },
   north: () => {
     setView('3d'); setCamera('orbit');
     const hb = state.model.bbox, cx = (hb.minX + hb.maxX) / 2, cy = (hb.minY + hb.maxY) / 2, s = Math.max(hb.maxX - hb.minX, hb.maxY - hb.minY);

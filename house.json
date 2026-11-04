@@ -1421,5 +1421,33 @@
         }
       ]
     }
+  ],
+  "people": [
+    {
+      "level": 0,
+      "x": 4.2,
+      "y": -3.9,
+      "facing": 0,
+      "shirt": "#d9d5c8",
+      "trousers": "#2e3340",
+      "hair": "#7a5a3a"
+    },
+    {
+      "level": 0,
+      "x": 5.4,
+      "y": -4.2,
+      "facing": 0,
+      "shirt": "#2b3a5c",
+      "trousers": "#c9b58c",
+      "hair": "#3b2a1e"
+    },
+    {
+      "name": "Niels",
+      "level": 0,
+      "x": 6.6,
+      "y": -3.9,
+      "facing": 0,
+      "silhouette": true
+    }
   ]
 }

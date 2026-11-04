@@ -25,7 +25,7 @@ Shared page: https://claude.ai/artifact/8euEAXQYsjZV1aJyjaBbuT (private until sh
 
 Anyone can also tweak the spec live in the page's Spec tab, press Apply, then Copy JSON and paste it back into the chat so `house.json` catches up.
 
-Linkable views: append `#plan`, `#top`, `#dollhouse` (top view, roof off), `#walk`, `#north` (the entrance side) or `#tour` (opens a guided tour, paused at the start) to the page URL. Any of these also skips the start screen.
+Linkable views: append `#plan`, `#top`, `#dollhouse` (top view, roof off), `#walk`, `#north` (the entrance side), `#garden` (the lake side at eye level) or `#tour` (opens a guided tour, paused at the start) to the page URL. Any of these also skips the start screen.
 
 ## Swapping the sky
 
@@ -93,6 +93,7 @@ All lengths are metres. Plan axes: `x` runs east, `y` runs north. A room's `x`,`
 - **site.beds**: garden beds with `plants` set to `flowers` or `shrubs`.
 - **site.neighbours**: plain house blocks with wall height `h`, a gable or flat roof and a `ridge` direction, for scale. Put them on flat ground; a block does not follow the slope.
 - **tour**: optional route for the Tour button: `{ "speed": 1.2, "stops": [ { "level": 0, "room": "Hall" }, { "room": "Kök", "pause": 2, "look": "Matplats" }, { "level": -1, "x": 5, "y": -2.5, "label": "Uteplats" } ] }`. A stop is a room name (string or `room`) or an `x`,`y` point; a stop without `level` stays on the previous stop's storey. `pause` is seconds, `look` (room name or `{x, y}`) turns the view during the pause, `speed` is metres per second. The route finds its own way through doors and openings, round stairs that stand in the way, and up or down the stairs between storeys. Without `tour`, the Tour button visits every room automatically.
+- **people**: simple figures on a storey (`level`, `x`, `y` in storey coordinates) with an optional `name` shown above the head, `facing` as a compass bearing, `shirt`, `trousers`, `hair` and `skin` colours, `silhouette` for an all-black figure and `wave`. They also appear as markers in the plan.
 - **site.lake**: optional. A lake with a soft natural outline inside the box `x`, `y`, `w`, `d`, turned by `rotate` degrees, lying at the low terrain level.
 - The walk camera starts inside the first exterior door of the chosen storey, preferring one whose `label` contains "entrance", "entré", "front" or "main".
 
