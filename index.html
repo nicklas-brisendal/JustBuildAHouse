@@ -3089,7 +3089,8 @@ try {
 }
 
 // A tone-mapped equirectangular photo as sky and environment light. Skipped on file:// where WebGL cannot read local images.
-function loadSky(url) {
+// Published and in docs/ the sky sits next to the page; served from the project root it is still in assets/.
+function loadSky(url, fallback = 'assets/sky.jpg') {
   if (!renderer || location.protocol === 'file:') return;
   new THREE.TextureLoader().load(url, tex => {
     tex.mapping = THREE.EquirectangularReflectionMapping; tex.colorSpace = THREE.SRGBColorSpace;
@@ -3100,7 +3101,7 @@ function loadSky(url) {
     hemi.intensity = 0.4; ambient.intensity = 0.2;
     scene.fog = new THREE.Fog(0xcfdde3, 160, 560);
     console.log('[jbah] sky loaded'); invalidate();
-  }, undefined, () => console.log('[jbah] no sky image next to the page, keeping the plain sky'));
+  }, undefined, () => { if (fallback && fallback !== url) loadSky(fallback, null); else console.log('[jbah] no sky image found, keeping the plain sky'); });
 }
 
 function fitLights(model) {
