@@ -340,10 +340,6 @@ const BUILT_IN_SPEC = /*SPEC-START*/{
     "overhang": 0.5,
     "ridge": "y"
   },
-  "tour": {
-    "speed": 3.6,
-    "stops": []
-  },
   "exterior": {
     "preset": "ochre"
   },
@@ -3265,7 +3261,7 @@ function frame(now) {
 // the stair flights between storeys. The corners are then cut into a smooth curve, which the camera walks at an even
 // pace while looking a little ahead. Plan coordinates throughout; world is (x, height, -y).
 const OUTSIDE = '\u0000outside';
-const TOUR = { speed: 1.2, stairFactor: 0.55, accel: 0.8, lookAhead: 1.7, eye: 1.6, doorDepth: 0.5, wallGap: 0.12, stairGap: 0.06, furnitureGap: 0.2 };
+const TOUR = { speed: 3.6, stairFactor: 0.55, accel: 0.8, lookAhead: 1.7, eye: 1.6, doorDepth: 0.5, wallGap: 0.12, stairGap: 0.06, furnitureGap: 0.2 };
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const tourBar = $('tour-bar'), tourPlay = $('tour-play'), tourWhere = $('tour-where'), tourFill = $('tour-fill');
 const ICON_PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg>';
